@@ -18,7 +18,8 @@
     "@slack/bolt": "^2.0.1",
     "@slack/events-api": "^2.3.2",
     "@slack/web-api": "^5.8.0",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "nodemailer": "^6.4.6"
   },
   "devDependencies": {
     "nodemon": "^2.0.3"
