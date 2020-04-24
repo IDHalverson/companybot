@@ -10,6 +10,15 @@ const app = new App({
 
 // code here
 
+app.event('message.channels', async ({event, context}) => {
+  try {
+    console.log(event);
+    console.log(context);
+  } catch (e) {
+    console.error(e)
+  }
+});
+
 
 (async () => {
   await app.start(process.env.PORT || 3000);
