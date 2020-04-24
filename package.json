@@ -1,0 +1,16 @@
+{
+  "name": "burris-bot",
+  "version": "1.0.0",
+  "description": "Slack API for custom interactions @ Burris Logistics",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "slack",
+    "burris",
+    "logistics"
+  ],
+  "author": "ihalverson@burrislogistics.com",
+  "license": "ISC"
+}
