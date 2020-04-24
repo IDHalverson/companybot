@@ -4,6 +4,7 @@
   "description": "Slack API for custom interactions @ Burris Logistics",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -14,7 +15,12 @@
   "author": "ihalverson@burrislogistics.com",
   "license": "ISC",
   "dependencies": {
+    "@slack/bolt": "^2.0.1",
     "@slack/events-api": "^2.3.2",
-    "@slack/web-api": "^5.8.0"
+    "@slack/web-api": "^5.8.0",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.3"
   }
 }
