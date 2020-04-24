@@ -12,5 +12,9 @@
     "logistics"
   ],
   "author": "ihalverson@burrislogistics.com",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@slack/events-api": "^2.3.2",
+    "@slack/web-api": "^5.8.0"
+  }
 }
