@@ -3,6 +3,7 @@ const nodemailer = require("nodemailer");
 const moment = require("moment");
 const { App } = require("@slack/bolt");
 const { get } = require("lodash");
+const axios = require("axios");
 const BurrisBot = require("./burris-bot");
 
 const burrisBot = new BurrisBot();
@@ -50,11 +51,18 @@ app.message(
   }
 );
 
-const getUserContext = async ({ context, command, next, ack, say }) => {
+const getUserContext = async ({
+  context,
+  command = {},
+  next,
+  ack,
+  say,
+  payload = {}
+}) => {
   try {
     const user = await app.client.users.info({
       token: context.botToken,
-      user: command.user_id,
+      user: get(payload, "user.id") || command.user_id,
       include_locale: true
     });
     context.user_id = user.user.id;
@@ -64,13 +72,22 @@ const getUserContext = async ({ context, command, next, ack, say }) => {
   } catch (e) {
     ack();
     console.error(e);
-    say(
-      `:email: Could not prepare email to send to ${process.env.SOLUTIONS_EMAIL}.\n\nError occurred: ${e}`
-    );
+    axios.post(payload.response_url, {
+      response_type: "ephemeral",
+      replace_original: false,
+      text: `:email: Could not prepare email to send to ${process.env.SOLUTIONS_EMAIL}.\n\nError occurred: ${e}`
+    });
   }
 };
 
-const mailSolutionsWorkflow = async ({ context, command, body, ack, say }) => {
+const mailSolutionsWorkflow = async ({
+  context,
+  command,
+  body,
+  ack,
+  say,
+  payload
+}) => {
   try {
     const textInline = command.text
       .replace(/\n/g, " ")
@@ -198,18 +215,41 @@ const mailSolutionsWorkflow = async ({ context, command, body, ack, say }) => {
     });
   } catch (e) {
     console.error(e);
-    say(
-      `:email: Could not prepare email to send to ${process.env.SOLUTIONS_EMAIL}.\n\nError occurred: ${e}`
-    );
+    axios.post((body || {}).response_url || (payload || {}).response_url, {
+      response_type: "ephemeral",
+      replace_original: false,
+      text: `:email: Could not prepare email to send to ${process.env.SOLUTIONS_EMAIL}.\n\nError occurred: ${e}`
+    });
   }
 };
 
 app.command(
   "/solutions",
   getUserContext,
-  async ({ context, command, body, ack, say }) => {
+  async ({ context, command, body, ack, say, payload }) => {
     await ack();
-    await mailSolutionsWorkflow({ context, command, body, ack, say });
+    await mailSolutionsWorkflow({ context, command, body, ack, say, payload });
+  }
+);
+
+app.shortcut(
+  "email_solutions_shortcut",
+  getUserContext,
+  async ({ context, command, body, ack, say, payload }) => {
+    await ack();
+    const synthesizedCommand = {
+      text: payload.message.text,
+      channel_name: payload.channel.name,
+      channel_id: payload.channel.id
+    };
+    await mailSolutionsWorkflow({
+      context,
+      command: synthesizedCommand,
+      body,
+      ack,
+      say,
+      payload
+    });
   }
 );
 
