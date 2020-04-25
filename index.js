@@ -206,7 +206,9 @@ const mailSolutionsWorkflow = async ({
             elements: [
               {
                 type: "mrkdwn",
-                text: `From: ${context.user_real_name} in #${command.channel_name}`
+                text: `From: ${context.user_real_name}${
+                  command.channel_name ? ` in #${command.channel_name}` : ""
+                }`
               }
             ]
           }
@@ -253,6 +255,27 @@ app.shortcut(
   }
 );
 
+app.shortcut(
+  "email_solutions_global_shortcut",
+  getUserContext,
+  async ({ context, command, body, ack, say, payload }) => {
+    await ack();
+    const synthesizedCommand = {
+      text: "",
+      channel_name: "",
+      channel_id: ""
+    };
+    await mailSolutionsWorkflow({
+      context,
+      command: synthesizedCommand,
+      body,
+      ack,
+      say,
+      payload
+    });
+  }
+);
+
 app.view("solutions_email", async ({ ack, payload, context }) => {
   try {
     const [
@@ -270,7 +293,9 @@ app.view("solutions_email", async ({ ack, payload, context }) => {
       "state.values.urgency.urgency_value.selected_option.value"
     );
 
-    const tagLine = `(Sent from Slack channel #${channel_name}. Reply to <a href="mailto:${user_email}">${user_real_name}</a>. If you experience issues with Burris Bot, contact <a href="mailto:ihalverson@burrislogistics.com">Ian Halverson</a>)`;
+    const tagLine = `(Sent from Slack ${
+      channel_name ? `channel #${channel_name}` : "global shortcut"
+    }. Reply to <a href="mailto:${user_email}">${user_real_name}</a>. If you experience issues with Burris Bot, contact <a href="mailto:ihalverson@burrislogistics.com">Ian Halverson</a>)`;
     const bodyHtml = `
       <div>
       <strong>Urgency level: ${urgency}</strong><br>
@@ -320,12 +345,14 @@ app.view("solutions_email", async ({ ack, payload, context }) => {
         ]
       }
     });
-    await app.client.chat.postEphemeral({
-      token: context.botToken,
-      channel: channel_id,
-      user: user_id,
-      text: `:email: :heavy_check_mark: I sent that email to ${process.env.SOLUTIONS_EMAIL} for you.`
-    });
+    if (channel_id) {
+      await app.client.chat.postEphemeral({
+        token: context.botToken,
+        channel: channel_id,
+        user: user_id,
+        text: `:email: :heavy_check_mark: I sent that email to ${process.env.SOLUTIONS_EMAIL} for you.`
+      });
+    }
   } catch (e) {
     console.error(e);
     await ack({
