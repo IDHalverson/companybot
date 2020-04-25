@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 const defaultMailOptions = {
-  from: process.env.EMAIL_USER,
+  from: `"${process.env.EMAIL_DISPLAY_NAME}" ${process.env.EMAIL_USER}`,
   to: process.env.SOLUTIONS_EMAIL,
   subject: "[Slack] "
 };
