@@ -17,8 +17,7 @@ const transporter = nodemailer.createTransport({
 });
 const defaultMailOptions = {
   from: process.env.EMAIL_USER,
-  // to: process.env.SOLUTIONS_EMAIL,
-  to: "ihalverson@burrislogistics.com",
+  to: process.env.SOLUTIONS_EMAIL,
   subject: "[Slack] "
 };
 
@@ -60,7 +59,6 @@ app.message(
     });
   }
 );
-
 
 app.command("/solutions", async ({ context, command, body, ack, say }) => {
   await ack();
@@ -183,40 +181,39 @@ app.command("/solutions", async ({ context, command, body, ack, say }) => {
       `:email: Could not prepare email to send to ${process.env.SOLUTIONS_EMAIL}.\n\nError occurred: ${e}`
     );
   }
+});
 
-
-  app.view("view_abc", ({ ack, view }) => {
-    console.log("GOT IT IT IT IT");
-    ack({
-      response_action: "update",
-      view: {
-        type: "modal",
-        title: {
-          type: "plain_text",
-          text: "Updated view"
-        },
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "plain_text",
-              text:
-                "I've changed and I'll never be the same. You must believe me."
-            }
+app.view("view_abc", ({ ack, view }) => {
+  console.log("GOT IT IT IT IT");
+  ack({
+    response_action: "update",
+    view: {
+      type: "modal",
+      title: {
+        type: "plain_text",
+        text: "Updated view"
+      },
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "plain_text",
+            text:
+              "I've changed and I'll never be the same. You must believe me."
           }
-        ]
-      }
-    });
-    console.log(view);
-
-    // const body = `
-    //   <div>
-    //   <strong>${context.user_name}:</strong><br><br>
-    //   <p>${}</p>
-    //   </div>
-    // `
+        }
+      ]
+    }
   });
+  console.log(view);
 
+  // const body = `
+  //   <div>
+  //   <strong>${context.user_name}:</strong><br><br>
+  //   <p>${}</p>
+  //   </div>
+  // `
+});
 
 (async () => {
   await app.start(process.env.PORT || 3000);
