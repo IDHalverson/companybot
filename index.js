@@ -234,6 +234,14 @@ app.command(
   }
 );
 
+app.command(
+  "/say-good-morning",
+  async ({ command }) => {
+    await ack();
+    say("Good morning everyone! :burris_snowflake_png:")
+  }
+)
+
 app.shortcut(
   "email_solutions_shortcut",
   getUserContext,
