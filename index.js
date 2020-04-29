@@ -236,7 +236,7 @@ app.command(
 
 app.command(
   "/say-good-morning",
-  async ({ command }) => {
+  async ({ ack, say, command }) => {
     await ack();
     say("Good morning everyone! :burris_snowflake_png:")
   }
