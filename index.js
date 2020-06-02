@@ -88,7 +88,7 @@ app.message(
             } else if (deliveryMethod === "post_message") {
               delete params.thread_ts;
             } else if (deliveryMethod === "direct_message") {
-              params.channel = payload.user;
+              params.channel = slackMemberId;
             }
 
             await app.client.chat.postMessage(params);
