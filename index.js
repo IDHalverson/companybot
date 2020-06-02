@@ -65,13 +65,12 @@ app.message(
         if (payload.attachments.some(att => att.text && att.text.includes(`[~${jiraUsername}]`))) {
           try {
             const jiraRegexp = new RegExp(`\\[\\~${jiraUsername}\\]`, 'g')
-
-            const params = {
+            let params = {
               token: context.botToken,
               channel: payload.channel,
               text: '',
               icon_emoji: ':jira:',
-              username: "JIRA",
+              username: "JIRA Tagger",
               thread_ts: payload.ts,
               attachments: payload.attachments.map(att => 
                 ({
@@ -82,17 +81,18 @@ app.message(
                 })
               )
             }
-
             if (deliveryMethod === "message_thread") {
               // do nothing
             } else if (deliveryMethod === "post_message") {
               delete params.thread_ts;
             } else if (deliveryMethod === "direct_message") {
-              params.channel = slackMemberId;
+              params = {
+                token: params.token,
+                channel: slackMemberId,
+                text: params.attachments.map(att => `${att.pretext}\n\n${att.text || ""}`).join("\n\n")
+              }
             }
-
             await app.client.chat.postMessage(params);
-
           } catch (e) {
             console.error(e)
           }
