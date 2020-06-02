@@ -51,6 +51,41 @@ app.message(
   }
 );
 
+app.message(
+  /^(?![\s\S])/,
+  async ({ context, payload }) => {
+    const jiraNotifyMappings = process.env.JIRA_NOTIFY_MAPPINGS || "";
+    if (payload && payload.attachments) {
+      for (let mapping of (jiraNotifyMappings.split(","))) {
+        const [jiraUsername, slackMemberId] = mapping.split(":");
+        if (payload.attachments.some(att => att.text && att.text.includes(`[~${jiraUsername}]`))) {
+          try {
+            const jiraRegexp = new RegExp(`\\[\\~${jiraUsername}\\]`, 'g')
+            await app.client.chat.postMessage({
+              token: context.botToken,
+              channel: payload.channel,
+              text: '',
+              icon_emoji: ':jira:',
+              username: "JIRA - Project SCP",
+              thread_ts: payload.ts,
+              attachments: payload.attachments.map(att => 
+                ({
+                  ...att, 
+                  text: !att.text 
+                    ? att.text 
+                    : att.text.replace(jiraRegexp, `<@${slackMemberId}>`)
+                })
+              )
+            });
+          } catch (e) {
+            console.error(e)
+          }
+        }
+      }
+    }
+  }
+)
+
 const getUserContext = async ({
   context,
   command = {},
