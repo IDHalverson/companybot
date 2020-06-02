@@ -57,16 +57,21 @@ app.message(
     const jiraNotifyMappings = process.env.JIRA_NOTIFY_MAPPINGS || "";
     if (payload && payload.attachments) {
       for (let mapping of (jiraNotifyMappings.split(","))) {
-        const [jiraUsername, slackMemberId] = mapping.split(":");
+        const [
+          jiraUsername, 
+          slackMemberId, 
+          deliveryMethod = "message_thread"
+        ] = mapping.split(":");
         if (payload.attachments.some(att => att.text && att.text.includes(`[~${jiraUsername}]`))) {
           try {
             const jiraRegexp = new RegExp(`\\[\\~${jiraUsername}\\]`, 'g')
-            await app.client.chat.postMessage({
+
+            const params = {
               token: context.botToken,
               channel: payload.channel,
               text: '',
               icon_emoji: ':jira:',
-              username: "JIRA - Project SCP",
+              username: "JIRA",
               thread_ts: payload.ts,
               attachments: payload.attachments.map(att => 
                 ({
@@ -76,7 +81,18 @@ app.message(
                     : att.text.replace(jiraRegexp, `<@${slackMemberId}>`)
                 })
               )
-            });
+            }
+
+            if (deliveryMethod === "message_thread") {
+              // do nothing
+            } else if (deliveryMethod === "post_message") {
+              delete params.thread_ts;
+            } else if (deliveryMethod === "direct_message") {
+              params.channel = payload.user;
+            }
+
+            await app.client.chat.postMessage(params);
+
           } catch (e) {
             console.error(e)
           }
