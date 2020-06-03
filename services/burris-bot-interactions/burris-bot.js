@@ -7,11 +7,17 @@ class BurrisBot {
       "Get It Right! :burris_snowflake_png:",
       "I Am Burris! :burris_snowflake_png:"
     ];
+    this.burrisBotGoodMorningGreeting =
+      "Good morning everyone! :burris_snowflake_png:";
   }
 
   getBurrisBotGreeting() {
     const randomIndex = Utils.getRandomInt(this.burrisBotGreetings.length);
     return this.burrisBotGreetings[randomIndex];
+  }
+
+  getGoodMorningGreeting() {
+    return this.burrisBotGoodMorningGreeting;
   }
 }
 

@@ -9,6 +9,9 @@ const jiraTagger = async ({ context, payload }) => {
       const { jiraUsername, slackMemberId, deliveryMethod } = mappingEntry;
       if (userWasTaggedInJiraMessage(payload, jiraUsername)) {
         try {
+          console.log(
+            `JIRA Tagger: tagged user ${jiraUsername} with method ${deliveryMethod} (ID: ${slackMemberId})`
+          );
           await app.client.chat.postMessage(
             resolveParams(
               deliveryMethod,
@@ -17,9 +20,6 @@ const jiraTagger = async ({ context, payload }) => {
               jiraUsername,
               slackMemberId
             )
-          );
-          console.log(
-            `JIRA Tagger: tagged user ${jiraUsername} with method ${deliveryMethod} (ID: ${slackMemberId})`
           );
         } catch (e) {
           console.error(e);
