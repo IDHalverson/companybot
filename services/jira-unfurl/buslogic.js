@@ -11,10 +11,14 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
       if (jiraIdentifier) {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
+        const credentials = process.env.JIRA_CREDS;
+        const [username, password] = new Buffer.from(credentials, "base64")
+          .toString("utf-8")
+          .split(":");
         const jiraCall = await axios.get(jiraApiUrl, {
           auth: {
-            username: process.env.JIRA_USERNAME,
-            password: process.env.JIRA_PASSWORD
+            username,
+            password
           }
         });
         if (jiraCall && jiraCall.status === 200) {
