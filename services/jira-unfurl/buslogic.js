@@ -6,7 +6,10 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
   try {
     ack && ack();
     // don't allow bot posts
-    if (payload.text && (!payload.attachments || !payload.attachments.length)) {
+    if (
+      payload.text &&
+      (!message.subtype || message.subtype !== "bot_message")
+    ) {
       const jiraIdentifier = context.matches && context.matches[0];
       if (jiraIdentifier) {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}`;
