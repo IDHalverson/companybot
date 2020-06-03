@@ -8,11 +8,11 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
     // don't allow bot posts
     if (
       payload.text &&
-      (!message.subtype || message.subtype !== "bot_message")
+      (!payload.subtype || payload.subtype !== "bot_message")
     ) {
       const jiraIdentifier = context.matches && context.matches[0];
       if (jiraIdentifier) {
-        const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}`;
+        const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
         const credentials = process.env.JIRA_CREDS;
         const [username, password] = new Buffer.from(credentials, "base64")
@@ -29,7 +29,6 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
           console.log(
             `JIRA unfurl: ${jiraIdentifier} in channel ${payload.channel}`
           );
-          console.log(payload, context);
           app.client.chat.postMessage({
             token: context.botToken,
             channel: payload.channel,
@@ -39,35 +38,40 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
             thread_ts: payload.thread_ts,
             attachments: [
               {
-                color: "205081",
-                fields: [
-                  {
-                    title: "Assignee",
-                    value: get(
-                      jiraJson,
-                      "fields.assignee.displayName",
-                      "(none)"
-                    ),
-                    short: true
-                  },
-                  {
-                    title: "Status",
-                    value: get(jiraJson, "fields.status.name", "(none)"),
-                    short: true
-                  }
-                  //   ,
-                  //   {
-                  //     title: "Creator",
-                  //     value: get(jiraJson, "fields.creator.displayName", "?"),
-                  //     short: true
-                  //   }
-                ],
-                title: `[${jiraIdentifier}] ${get(
+                color: "2684ff",
+                text: `<${jiraBrowseUrl}|*${jiraIdentifier}: ${get(
                   jiraJson,
                   "fields.summary",
                   "?"
-                )}`,
-                title_link: jiraBrowseUrl
+                )}*>\nStatus: \`${get(
+                  jiraJson,
+                  "fields.status.name",
+                  "none"
+                )}\`       Assignee: ${
+                  !get(jiraJson, "fields.assignee.displayName")
+                    ? "*Unassigned*"
+                    : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+                        jiraJson,
+                        "fields.assignee.name",
+                        "none"
+                      )}|*${get(
+                        jiraJson,
+                        "fields.assignee.displayName",
+                        "none"
+                      )}*>`
+                }       Priority: *${get(
+                  jiraJson,
+                  "fields.priority.name",
+                  "none"
+                )}*`,
+                footer: `<${process.env.JIRA_PROJECT_PREFIX}${get(
+                  jiraJson,
+                  "fields.project.key"
+                )}|${get(jiraJson, "fields.project.name")}> | <${
+                  process.env.JIRA_MAIN_URL
+                }|${process.env.JIRA_OUTER_CONTEXT_TEXT}>`,
+                footer_icon:
+                  "https://emoji.slack-edge.com/T01094KTUES/jira_alien_spaceship/dcaf93460f86f468.png"
               }
             ]
           });
