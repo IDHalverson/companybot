@@ -1,6 +1,5 @@
 require("dotenv").config();
 const nodemailer = require("nodemailer");
-const moment = require("moment");
 const { App } = require("@slack/bolt");
 const { get } = require("lodash");
 const axios = require("axios");
@@ -50,58 +49,6 @@ app.message(
     });
   }
 );
-
-app.message(
-  /^(?![\s\S])/,
-  async ({ context, payload }) => {
-    const jiraNotifyMappings = process.env.JIRA_NOTIFY_MAPPINGS || "";
-    if (payload && payload.attachments) {
-      for (let mapping of (jiraNotifyMappings.split(","))) {
-        const [
-          jiraUsername, 
-          slackMemberId, 
-          deliveryMethod = "message_thread"
-        ] = mapping.split(":");
-        if (payload.attachments.some(att => att.text && att.text.includes(`[~${jiraUsername}]`))) {
-          try {
-            const jiraRegexp = new RegExp(`\\[\\~${jiraUsername}\\]`, 'g')
-            let params = {
-              token: context.botToken,
-              channel: payload.channel,
-              text: '',
-              icon_emoji: ':jira:',
-              username: "JIRA Tagger",
-              thread_ts: payload.ts,
-              attachments: payload.attachments.map(att => 
-                ({
-                  ...att, 
-                  text: !att.text 
-                    ? att.text 
-                    : att.text.replace(jiraRegexp, `<@${slackMemberId}>`)
-                })
-              )
-            }
-            if (deliveryMethod === "message_thread") {
-              // do nothing
-            } else if (deliveryMethod === "post_message") {
-              delete params.thread_ts;
-            } else if (deliveryMethod === "direct_message") {
-              params = {
-                token: params.token,
-                channel: slackMemberId,
-                text: params.text,
-                attachments: params.attachments
-              }
-            }
-            await app.client.chat.postMessage(params);
-          } catch (e) {
-            console.error(e)
-          }
-        }
-      }
-    }
-  }
-)
 
 const getUserContext = async ({
   context,
@@ -286,13 +233,10 @@ app.command(
   }
 );
 
-app.command(
-  "/say-good-morning",
-  async ({ ack, say, command }) => {
-    await ack();
-    say("Good morning everyone! :burris_snowflake_png:")
-  }
-)
+app.command("/say-good-morning", async ({ ack, say, command }) => {
+  await ack();
+  say("Good morning everyone! :burris_snowflake_png:");
+});
 
 app.shortcut(
   "email_solutions_shortcut",
@@ -446,3 +390,9 @@ app.view("solutions_email", async ({ ack, payload, context }) => {
   await app.start(process.env.PORT || 3000);
   console.log("Burris Bot is now running!");
 })();
+
+module.exports = { app };
+
+require("./services/email-solutions/routes.js");
+require("./services/listen-for-here/routes.js");
+require("./services/jira-tagger/routes.js");
