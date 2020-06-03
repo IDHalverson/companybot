@@ -3,9 +3,6 @@ const nodemailer = require("nodemailer");
 const { App } = require("@slack/bolt");
 const { get } = require("lodash");
 const axios = require("axios");
-const BurrisBot = require("./burris-bot");
-
-const burrisBot = new BurrisBot();
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -25,10 +22,6 @@ const defaultMailOptions = {
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET
-});
-
-app.message(/(.)*burris(\-|\_)*bot(.)*/i, async ({ context, say }) => {
-  await say(burrisBot.getBurrisBotGreeting());
 });
 
 app.message(
@@ -396,3 +389,4 @@ module.exports = { app };
 require("./services/email-solutions/routes.js");
 require("./services/listen-for-here/routes.js");
 require("./services/jira-tagger/routes.js");
+require("./services/burris-bot-interactions/routes.js");
