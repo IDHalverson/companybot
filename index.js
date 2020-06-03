@@ -89,7 +89,8 @@ app.message(
               params = {
                 token: params.token,
                 channel: slackMemberId,
-                text: params.attachments.map(att => `${att.pretext}\n\n${att.text || ""}`).join("\n\n")
+                text: params.text,
+                attachments: params.attachments
               }
             }
             await app.client.chat.postMessage(params);
