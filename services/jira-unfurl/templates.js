@@ -157,22 +157,26 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `*Worklogs*: ${Object.entries(
-            get(jiraJson, "fields.worklog.worklogs", []).reduce((obj, wl) => {
-              obj[wl.author.displayName] =
-                (obj[wl.author.displayName] || 0) + wl.timeSpentSeconds;
-              obj["Total"] = (obj["Total"] || 0) + wl.timeSpentSeconds;
-              return obj;
-            }, {})
-          )
-            .sort((a, b) => (a[0] === "Total" ? -1 : b[0] === "Total" ? 1 : 0))
-            .map(
-              ([user, seconds]) =>
-                `\`${user}: ${moment
-                  .duration(seconds, "seconds")
-                  .asHours()}hrs\``
+          text: `*Worklogs*: ${
+            Object.entries(
+              get(jiraJson, "fields.worklog.worklogs", []).reduce((obj, wl) => {
+                obj[wl.author.displayName] =
+                  (obj[wl.author.displayName] || 0) + wl.timeSpentSeconds;
+                obj["Total"] = (obj["Total"] || 0) + wl.timeSpentSeconds;
+                return obj;
+              }, {})
             )
-            .join("  ")}`
+              .sort((a, b) =>
+                a[0] === "Total" ? -1 : b[0] === "Total" ? 1 : 0
+              )
+              .map(
+                ([user, seconds]) =>
+                  `\`${user}: ${moment
+                    .duration(seconds, "seconds")
+                    .asHours()}hrs\``
+              )
+              .join("  ") || "none"
+          }`
         }
       },
       {
