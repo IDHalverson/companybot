@@ -1,5 +1,6 @@
 const { app } = require("../../index");
 const { get } = require("lodash");
+const TEMPLATES = require("./templates");
 
 const bscpStandupSlashCommandCallback = async ({ command, context, ack }) => {
   await ack();
@@ -9,22 +10,7 @@ const bscpStandupSlashCommandCallback = async ({ command, context, ack }) => {
     username: "Standup Checklist",
     icon_emoji: ":mega:",
     channel: command.channel_id,
-
-    text: `Who needs to give their update:
-    
-    :black_small_square: <@U01094ZKHL6>
-    :black_small_square: <@UV9EGMVEF>
-    :black_small_square: <@U010A59KWHM>
-    :black_small_square: <@U01089U0MRT>
-    :black_small_square: <@U0108UU2TJT>
-    :black_small_square: <@U0107R9Q01J>
-    :black_small_square: <@U010A59HEQP>
-    :black_small_square: <@U0107R9NT8U>
-    :black_small_square: <@UBYEG09K7>
-    :black_small_square: <@UBYH4BM2R>
-    :black_small_square: <@UM4749Q6B>
-    :black_small_square: <@UBYD0UKQA>
-    :black_small_square: <@U010A59LGMV>`
+    text: TEMPLATES.standupTemplate(process.env.STANDUP_USER_IDS.split(","))
   });
 };
 
