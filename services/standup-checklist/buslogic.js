@@ -53,7 +53,7 @@ const someoneHasGoneCallback = async ({ payload, context, ack }) => {
       });
     }
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
   }
 };
 

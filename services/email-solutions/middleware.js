@@ -22,7 +22,7 @@ const getUserContext = async ({
     await next();
   } catch (e) {
     ack();
-    console.error(e);
+    console.error(e.stack);
     axios.post(payload.response_url, {
       response_type: "ephemeral",
       replace_original: false,

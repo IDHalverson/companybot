@@ -61,7 +61,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
       }
     }
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
   }
 };
 
@@ -122,7 +122,7 @@ const jiraUnfurlDetailedCallback = async ({
       }
     }
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
   }
 };
 

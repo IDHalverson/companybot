@@ -149,7 +149,7 @@ const emailSolutionsFormSubmissionCallback = async ({
       );
     }
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
     await ack(TEMPLATES.getProblemSendingEmailResponse(e));
   }
 };
@@ -187,7 +187,7 @@ const mailSolutionsWorkflow = async ({ context, command, body, payload }) => {
       )
     });
   } catch (e) {
-    console.error(e);
+    console.error(e.stack);
     axios.post((body || {}).response_url || (payload || {}).response_url, {
       response_type: "ephemeral",
       replace_original: false,

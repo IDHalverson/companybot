@@ -22,7 +22,7 @@ const jiraTagger = async ({ context, payload }) => {
             )
           );
         } catch (e) {
-          console.error(e);
+          console.error(e.stack);
         }
       }
     }
