@@ -16,7 +16,12 @@ app.message(
         await app.client.chat.postMessage({
           token: context.botToken,
           channel: get(context, "matches[1]"),
-          text: get(context, "matches[2]"),
+          text: payload.text
+            .replace(
+              /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z\-\_]+\>\s/,
+              ""
+            )
+            .replace(/\n\*([\s]+)\*/g, "\n$1"),
           // keep @here, @channel, etc.
           parse: "full"
         });
