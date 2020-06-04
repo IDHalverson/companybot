@@ -18,3 +18,4 @@ require("./services/listen-for-here/routes.js");
 require("./services/jira-tagger/routes.js");
 require("./services/burris-bot-interactions/routes.js");
 require("./services/jira-unfurl/routes.js");
+require("./services/standup-checklist/routes.js");
