@@ -11,7 +11,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
       (!payload.subtype || payload.subtype !== "bot_message")
     ) {
       const jiraIdentifier =
-        command.text || (context.matches && context.matches[0]);
+        (command && command.text) || (context.matches && context.matches[0]);
       if (jiraIdentifier) {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
@@ -29,7 +29,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
           const jiraJson = jiraCall.data;
           console.log(
             `JIRA unfurl: ${jiraIdentifier} in channel ${
-              command.channel_id || payload.channel
+              (command && command.channel_id) || payload.channel
             }`
           );
           let postParams = {
