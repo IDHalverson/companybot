@@ -2,15 +2,16 @@ const { app } = require("../../index");
 const axios = require("axios");
 const { get } = require("lodash");
 
-const jiraUnfurlCallback = async ({ payload, context, ack }) => {
+const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
   try {
-    ack && ack();
+    ack && (await ack());
     // don't allow bot posts
     if (
       payload.text &&
       (!payload.subtype || payload.subtype !== "bot_message")
     ) {
-      const jiraIdentifier = context.matches && context.matches[0];
+      const jiraIdentifier =
+        command.text || (context.matches && context.matches[0]);
       if (jiraIdentifier) {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
@@ -27,15 +28,14 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
         if (jiraCall && jiraCall.status === 200) {
           const jiraJson = jiraCall.data;
           console.log(
-            `JIRA unfurl: ${jiraIdentifier} in channel ${payload.channel}`
+            `JIRA unfurl: ${jiraIdentifier} in channel ${
+              command.channel_id || payload.channel
+            }`
           );
-          app.client.chat.postMessage({
+          let postParams = {
             token: context.botToken,
-            channel: payload.channel,
             icon_emoji: ":jira:",
             username: "JIRA",
-            reply_broadcast: false,
-            thread_ts: payload.thread_ts,
             attachments: [
               {
                 color: "2684ff",
@@ -74,7 +74,22 @@ const jiraUnfurlCallback = async ({ payload, context, ack }) => {
                   "https://emoji.slack-edge.com/T01094KTUES/jira_alien_spaceship/dcaf93460f86f468.png"
               }
             ]
-          });
+          };
+          if (command && command.text) {
+            postParams = {
+              ...postParams,
+              response_type: "in_channel"
+            };
+            axios.post(command.response_url, postParams);
+          } else {
+            postParams = {
+              ...postParams,
+              channel: payload.channel,
+              reply_broadcast: false,
+              thread_ts: payload.thread_ts
+            };
+            app.client.chat.postMessage(postParams);
+          }
         }
       }
     }
