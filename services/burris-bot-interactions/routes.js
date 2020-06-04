@@ -16,7 +16,9 @@ app.message(
         await app.client.chat.postMessage({
           token: context.botToken,
           channel: get(context, "matches[1]"),
-          text: get(context, "matches[2]")
+          text: get(context, "matches[2]"),
+          // keep @here, @channel, etc.
+          parse: "full"
         });
       }
     } catch (e) {
