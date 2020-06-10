@@ -75,8 +75,10 @@ const jiraUnfurlDetailedCallback = async ({
 }) => {
   try {
     ack && (await ack());
-    const jiraIdentifier = command.text;
-    if (jiraIdentifier) {
+    const jiraIdentifiers = command.text.match(
+      /((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)/g
+    );
+    await jiraIdentifiers.forEach(async (jiraIdentifier) => {
       const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
       const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
       const credentials = process.env.JIRA_CREDS;
@@ -122,7 +124,7 @@ const jiraUnfurlDetailedCallback = async ({
           app.client.chat.postMessage(postParams);
         }
       }
-    }
+    });
   } catch (e) {
     console.error(e.stack);
   }
