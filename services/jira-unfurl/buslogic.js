@@ -10,9 +10,11 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
       payload.text &&
       (!payload.subtype || payload.subtype !== "bot_message")
     ) {
-      const jiraIdentifier =
-        (command && command.text) || (context.matches && context.matches[0]);
-      if (jiraIdentifier) {
+      const jiraIdentifierMatches = (
+        (command && command.text) ||
+        (payload && payload.text)
+      ).match(/((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)/g);
+      await jiraIdentifierMatches.forEach(async (jiraIdentifier) => {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
         const credentials = process.env.JIRA_CREDS;
@@ -58,7 +60,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
             app.client.chat.postMessage(postParams);
           }
         }
-      }
+      });
     }
   } catch (e) {
     console.error(e.stack);
