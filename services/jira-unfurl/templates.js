@@ -1,26 +1,35 @@
 const moment = require("moment");
 const { get } = require("lodash");
 
-const jiraUnfurlAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
+const jiraUnfurlAttachments = (
+  jiraJson,
+  jiraBrowseUrl,
+  jiraIdentifier,
+  comment
+) => [
   {
     color: "2684ff",
-    text: `<${jiraBrowseUrl}|*${jiraIdentifier}: ${get(
-      jiraJson,
-      "fields.summary",
-      "?"
-    )}*>\nStatus: \`${get(
-      jiraJson,
-      "fields.status.name",
-      "none"
-    )}\`       Assignee: ${
-      !get(jiraJson, "fields.assignee.displayName")
-        ? "*Unassigned*"
-        : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+    text: `${
+      comment ? "Comment on " : ""
+    }<${jiraBrowseUrl}|*${jiraIdentifier}: ${
+      comment ? "" : get(jiraJson, "fields.summary", "?")
+    }*>${
+      comment
+        ? ""
+        : `\nStatus: \`${get(
             jiraJson,
-            "fields.assignee.name",
+            "fields.status.name",
             "none"
-          )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
-    }       Priority: *${get(jiraJson, "fields.priority.name", "none")}*`,
+          )}\`       Assignee: ${
+            !get(jiraJson, "fields.assignee.displayName")
+              ? "*Unassigned*"
+              : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+                  jiraJson,
+                  "fields.assignee.name",
+                  "none"
+                )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
+          }       Priority: *${get(jiraJson, "fields.priority.name", "none")}*`
+    }${comment ? `\n\n${comment.author.displayName}: ${comment.body}\n` : ""}`,
     footer: `<${process.env.JIRA_PROJECT_PREFIX}${get(
       jiraJson,
       "fields.project.key"

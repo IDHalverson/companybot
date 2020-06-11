@@ -1,6 +1,7 @@
 const { app } = require("../../index");
 const axios = require("axios");
 const TEMPLATES = require("./templates");
+const { get } = require("lodash");
 
 const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
   try {
@@ -29,11 +30,14 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
         });
         if (jiraCall && jiraCall.status === 200) {
           const jiraJson = jiraCall.data;
-          console.log(
-            `JIRA unfurl: ${jiraIdentifier} in channel ${
-              (command && command.channel_id) || payload.channel
-            }`
-          );
+          let comment;
+          const text = (command && command.text) || (payload && payload.text);
+          const commentMatch = text.match(/#comment-([0-9]+)/);
+          if (commentMatch && commentMatch[1]) {
+            comment = (get(jiraJson, "fields.comment.comments", []) || []).find(
+              (comm) => comm.id == commentMatch[1]
+            );
+          }
           let postParams = {
             token: context.botToken,
             icon_emoji: ":jira:",
@@ -41,7 +45,8 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
             attachments: TEMPLATES.jiraUnfurlAttachments(
               jiraJson,
               jiraBrowseUrl,
-              jiraIdentifier
+              jiraIdentifier,
+              comment
             )
           };
           if (command && command.text) {
