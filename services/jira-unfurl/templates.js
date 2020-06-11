@@ -10,7 +10,7 @@ const jiraUnfurlAttachments = (
   {
     color: "2684ff",
     text: `${
-      comment ? "Comment on " : ""
+      comment ? `Comment from ${comment.author.displayName} on ` : ""
     }<${jiraBrowseUrl}|*${jiraIdentifier}: ${
       comment ? "" : get(jiraJson, "fields.summary", "?")
     }*>${
@@ -29,7 +29,7 @@ const jiraUnfurlAttachments = (
                   "none"
                 )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
           }       Priority: *${get(jiraJson, "fields.priority.name", "none")}*`
-    }${comment ? `\n\n${comment.author.displayName}: ${comment.body}\n` : ""}`,
+    }${comment ? `\n\n${comment.body}\n` : ""}`,
     footer: `<${process.env.JIRA_PROJECT_PREFIX}${get(
       jiraJson,
       "fields.project.key"
