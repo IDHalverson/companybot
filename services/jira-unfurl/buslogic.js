@@ -15,6 +15,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
         (command && command.text) ||
         (payload && payload.text)
       ).match(/((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)/g);
+      const alreadySentMap = {};
       await jiraIdentifierMatches.forEach(async (jiraIdentifier) => {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
@@ -49,21 +50,25 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
               comment
             )
           };
-          if (command && command.text) {
-            postParams = {
-              ...postParams,
-              response_type: "in_channel"
-            };
-            axios.post(command.response_url, postParams);
-          } else {
-            postParams = {
-              ...postParams,
-              channel: payload.channel,
-              reply_broadcast: false,
-              thread_ts: payload.thread_ts
-            };
-            app.client.chat.postMessage(postParams);
+          const key = `${jiraIdentifier}${comment ? "_comment" : ""}`;
+          if (!alreadySentMap[key]) {
+            if (command && command.text) {
+              postParams = {
+                ...postParams,
+                response_type: "in_channel"
+              };
+              axios.post(command.response_url, postParams);
+            } else {
+              postParams = {
+                ...postParams,
+                channel: payload.channel,
+                reply_broadcast: false,
+                thread_ts: payload.thread_ts
+              };
+              app.client.chat.postMessage(postParams);
+            }
           }
+          alreadySentMap[key] = true;
         }
       });
     }
