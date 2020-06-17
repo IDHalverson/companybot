@@ -16,7 +16,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
         (payload && payload.text)
       ).match(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/g);
       const alreadySentMap = {};
-      await jiraIdentifierMatches.forEach(async (jiraIdentifier) => {
+      await (jiraIdentifierMatches || []).forEach(async (jiraIdentifier) => {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
         const credentials = process.env.JIRA_CREDS;
@@ -88,7 +88,7 @@ const jiraUnfurlDetailedCallback = async ({
     const jiraIdentifiers = command.text.match(
       /((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/g
     );
-    await jiraIdentifiers.forEach(async (jiraIdentifier) => {
+    await (jiraIdentifiers || []).forEach(async (jiraIdentifier) => {
       const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
       const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
       const credentials = process.env.JIRA_CREDS;
