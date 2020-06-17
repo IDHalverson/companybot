@@ -14,7 +14,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
       const jiraIdentifierMatches = (
         (command && command.text) ||
         (payload && payload.text)
-      ).match(/((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)/g);
+      ).match(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/g);
       const alreadySentMap = {};
       await jiraIdentifierMatches.forEach(async (jiraIdentifier) => {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
@@ -86,7 +86,7 @@ const jiraUnfurlDetailedCallback = async ({
   try {
     ack && (await ack());
     const jiraIdentifiers = command.text.match(
-      /((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)/g
+      /((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/g
     );
     await jiraIdentifiers.forEach(async (jiraIdentifier) => {
       const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
