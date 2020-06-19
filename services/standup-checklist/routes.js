@@ -13,3 +13,5 @@ app.message(/uncheck \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
 app.message(/where is \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
 
 app.message(/\<\@([A-Za-z0-9]+)\> is on vacation/, someoneHasGoneCallback);
+
+app.message(/self\-destruct/, someoneHasGoneCallback);

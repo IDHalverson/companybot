@@ -33,23 +33,30 @@ const someoneHasGoneCallback = async ({ payload, context, ack }) => {
       messageText.includes("Who needs to give their update")
     ) {
       console.log(`Applying command to Standup checklist: ${actionText}`);
-      await app.client.chat.update({
+      const deleteIt = actionText.includes("self-destruct");
+      await app.client.chat[deleteIt ? "delete" : "update"]({
         token: context.botToken,
         channel: payload.channel,
         ts: payload.thread_ts,
         as_user: true,
-        text: messageText.replace(
-          new RegExp(`\\:[a-z0-9\\_\\-]+\\:\\s(\\~)?\\<\\@${userId}\\>(\\~)?`),
-          actionText.includes("check off")
-            ? `:heavy_check_mark: ~<@${userId}>~`
-            : actionText.includes("where is")
-            ? `:questionblock: ~<@${userId}>~`
-            : actionText.includes("is on vacation")
-            ? `:beach: ~<@${userId}>~`
-            : actionText.includes("uncheck")
-            ? `:black_small_square: <@${userId}>`
-            : `:black_small_square: <@${userId}>`
-        )
+        ...(deleteIt
+          ? {}
+          : {
+              text: messageText.replace(
+                new RegExp(
+                  `\\:[a-z0-9\\_\\-]+\\:\\s(\\~)?\\<\\@${userId}\\>(\\~)?`
+                ),
+                actionText.includes("check off")
+                  ? `:heavy_check_mark: ~<@${userId}>~`
+                  : actionText.includes("where is")
+                  ? `:questionblock: ~<@${userId}>~`
+                  : actionText.includes("is on vacation")
+                  ? `:beach: ~<@${userId}>~`
+                  : actionText.includes("uncheck")
+                  ? `:black_small_square: <@${userId}>`
+                  : `:black_small_square: <@${userId}>`
+              )
+            })
       });
     }
   } catch (e) {
