@@ -1,5 +1,6 @@
 const moment = require("moment");
 const { get } = require("lodash");
+const { jiraBlue } = require("../../colors");
 
 const jiraUnfurlAttachments = (
   jiraJson,
@@ -8,7 +9,7 @@ const jiraUnfurlAttachments = (
   comment
 ) => [
   {
-    color: "2684ff",
+    color: jiraBlue,
     text: `${
       comment ? `Comment from ${comment.author.displayName} on ` : ""
     }<${jiraBrowseUrl}|*${jiraIdentifier}: ${
@@ -43,7 +44,7 @@ const jiraUnfurlAttachments = (
 
 const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
   {
-    color: "2684ff",
+    color: jiraBlue,
     blocks: [
       {
         type: "section",
