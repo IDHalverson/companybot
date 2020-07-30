@@ -14,4 +14,11 @@ app.message(/where is \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
 
 app.message(/\<\@([A-Za-z0-9]+)\> is on vacation/, someoneHasGoneCallback);
 
-app.message(/self\-destruct/, someoneHasGoneCallback);
+app.message(
+  /\<\@([A-Za-z0-9]+)\> is taking a sick day/,
+  someoneHasGoneCallback
+);
+
+app.message(/\<\@([A-Za-z0-9]+)\> is busy/, someoneHasGoneCallback);
+
+app.message(/self[\- ]{1}destruct/, someoneHasGoneCallback);
