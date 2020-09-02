@@ -22,7 +22,7 @@ const defaultMailOptions = {
 /* ASYNC METHODS */
 
 const messageRawTextMatchCallback = async ({ context, body, payload }) => {
-  const channelInfo = await app.client.channels.info({
+  const channelInfo = await app.client.conversations.info({
     token: context.botToken,
     channel: body.event.channel
   });
@@ -172,7 +172,7 @@ const mailSolutionsWorkflow = async ({ context, command, body, payload }) => {
     const initialSubject =
       defaultMailOptions.subject +
       `${(textInline || "").substring(0, 60)}${
-        (textInline || "").length > 59 ? "..." : ""
+      (textInline || "").length > 59 ? "..." : ""
       }`;
     const initialBody = command.text;
 
