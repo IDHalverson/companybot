@@ -85,12 +85,15 @@ const replaceTagSyntaxWithRealTag = async ({ payload, context }) => {
     })
 
     if (returnTags.length) {
+
+        const peopleText = returnTags.length > 1 ? "these people" : "this person";
+
         await app.client.chat.postMessage({
             token: context.botToken,
             channel: payload.channel,
             thread_ts: payload.ts,
             as_user: true,
-            text: returnTags.join(" ")
+            text: `Looks like you tried to tag ${peopleText}. I can help: ${returnTags.join(" ")}`
         })
     }
     return;
