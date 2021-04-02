@@ -96,7 +96,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `Looks like you tried to tag ${peopleText}. I can help: ${returnTags.join(" ")}`
+                text: `Looks like you tried to tag ${peopleText}. I can help: ${returnTags.join(" ")}\n\n_(Type 'undo' to have this message removed.)_`
             })
         }
         return;

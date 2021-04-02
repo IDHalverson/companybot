@@ -11,6 +11,6 @@ app.message(
 );
 
 app.message(
-    /^[\s]*undo/gi,
+    /^[\s\'\`\"]*undo[\s\'\`\"]*$/gi,
     undoRealTagReply
 )
