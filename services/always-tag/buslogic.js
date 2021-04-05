@@ -159,8 +159,12 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             if (usedDoubleAts) doubleAtWasAttemptedCount++;
             const { tagMultipleMatchedUsersWithOneTag } = FEATURE_FLAGS.usedDoubleAts[usedDoubleAts] || {};
             const tagIsActive = payload.text.includes(`<${tag}>`) ||
-                payload.text.match(new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag}\\>`));
-            const tagIsInvalid = tag === "@@?" || tag === "@?";
+                payload.text.match(new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag.split("")
+                    .map(char => char.match(/[a-zA-Z]/)
+                        ? char
+                        : `\\${char}`
+                    )}\\>`));
+            const tagIsInvalid = tag.match(/^\@[\@]*[\?]+$/) || (tag.split(" ")[0]).match(/^\@[\@]*[\?]+$/);
             if (!tagIsActive && !tagIsInvalid) {
                 const tagRaw = tag.trim()
                     .replace(/^@/, "")
