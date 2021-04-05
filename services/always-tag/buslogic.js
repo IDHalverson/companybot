@@ -25,6 +25,9 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         });
         if (user.is_bot) return;
 
+        let doubleAtWasAttemptedCount = 0;
+        let doubleAtWasIgnoredCount = 0;
+
         let loadedTaggables = false;
         let members;
         let usergroups;
@@ -42,26 +45,26 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             candidatesMap = {};
             candidatesMapFormats = [];
             members.forEach(member => {
-                const realNameSplit = (member.profile.real_name || "").split(" ");
-                const displayNameSplit = (member.profile.display_name || "").split(" ");
-                // get last name
-                let lastName = (member.profile.last_name || "").toLowerCase();
-                if (!lastName && realNameSplit.length === 2) {
-                    lastName = realNameSplit[1]
-                }
-                // get first name
-                let firstName = (member.profile.first_name || "").toLowerCase();
-                if (!firstName && realNameSplit.length === 2) {
-                    firstName = realNameSplit[0]
-                }
-                if (!firstName && displayNameSplit.length === 2 && displayNameSplit[1] === lastName) {
-                    firstName = displayNameSplit[0];
-                }
-                firstName = (firstName || "").toLowerCase();
-                lastName = (lastName || "").toLowerCase();
-                const f = firstName.charAt(0);
-                const l = lastName.charAt(0);
-                if (firstName && lastName && !member.is_bot && !member.deleted) {
+                if (!member.is_bot && !member.deleted) {
+                    const realNameSplit = (member.profile.real_name || "").split(" ");
+                    const displayNameSplit = (member.profile.display_name || "").split(" ");
+                    // get last name
+                    let lastName = (member.profile.last_name || "").toLowerCase();
+                    if (!lastName && realNameSplit.length === 2) {
+                        lastName = realNameSplit[1]
+                    }
+                    // get first name
+                    let firstName = (member.profile.first_name || "").toLowerCase();
+                    if (!firstName && realNameSplit.length === 2) {
+                        firstName = realNameSplit[0]
+                    }
+                    if (!firstName && displayNameSplit.length === 2 && displayNameSplit[1] === lastName) {
+                        firstName = displayNameSplit[0];
+                    }
+                    firstName = (firstName || "").toLowerCase();
+                    lastName = (lastName || "").toLowerCase();
+                    const f = firstName.charAt(0);
+                    const l = lastName.charAt(0);
                     const createFormatsList = !candidatesMapFormats.length;
                     for (let [format, key] of [
                         ["name", (member.name || "").toLowerCase()],
@@ -103,12 +106,34 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             else {
                 const taggedMembers = [];
                 _formatsLoop: for (let format of candidatesMapFormats) {
-                    const matches = candidatesMap[format][rawTagPortion] || [];
-                    if (!tagMultipleMatchedUsersWithOneTag && matches.length === 1) {
-                        taggedMembers.push(matches[0][1]);
+                    let keys = [rawTagPortion];
+                    if (rawTagPortion.includes("?")) {
+                        const rawTagSplit = rawTagPortion.split("?");
+                        // escape all input chars, add wildcard syntax for regex
+                        const regex = `^${rawTagSplit.map(section =>
+                            section
+                                .split("")
+                                .map(char => char.match(/[a-zA-Z]/) ? char : `\\${char}`)
+                                .join("")
+                        ).join("(.)*")
+                            }$`;
+                        keys = Object.keys(candidatesMap[format]).filter(aKey =>
+                            aKey.match(regex)
+                        );
+                    }
+                    let breakFormatsLoop = false;
+                    _keysLoop: for (let key of keys) {
+                        const matches = candidatesMap[format][key] || [];
+                        if (!tagMultipleMatchedUsersWithOneTag && matches.length === 1) {
+                            taggedMembers.push(matches[0][1]);
+                            breakFormatsLoop = true;
+                            break _keysLoop;
+                        } else if (tagMultipleMatchedUsersWithOneTag && matches.length > 0) {
+                            matches.forEach(m => taggedMembers.push(m[1]));
+                        }
+                    }
+                    if (breakFormatsLoop) {
                         break _formatsLoop;
-                    } else if (tagMultipleMatchedUsersWithOneTag && matches.length > 0) {
-                        matches.forEach(m => taggedMembers.push(m[1]));
                     }
                 }
                 if (taggedMembers.length) {
@@ -124,10 +149,12 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
 
         await asyncForEach(context.matches, async (tag) => {
             const usedDoubleAts = tag.startsWith("@@");
+            if (usedDoubleAts) doubleAtWasAttemptedCount++;
             const { tagMultipleMatchedUsersWithOneTag } = FEATURE_FLAGS.usedDoubleAts[usedDoubleAts] || {};
             const tagIsActive = payload.text.includes(`<${tag}>`) ||
                 payload.text.match(new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag}\\>`));
-            if (!tagIsActive) {
+            const tagIsInvalid = tag === "@@?" || tag === "@?";
+            if (!tagIsActive && !tagIsInvalid) {
                 const tagRaw = tag.trim()
                     .replace(/^@/, "")
                     .replace(/^@/, "")
@@ -158,12 +185,21 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         if (done) break _loop2;
                     }
                 }
+            } else {
+                doubleAtWasIgnoredCount++
             }
         })
 
-        if (returnHelperTags.length) {
+        const filterThem = (helperTags) => Object.keys(helperTags.reduce((obj, tag) => {
+            obj[tag] = true;
+            return obj;
+        }, {}));
+        const finalReturnHelperTags = filterThem(returnHelperTags);
+        const finalReturnSmartTags = filterThem(returnSmartTags);
 
-            const peopleText = returnHelperTags.length > 1 ? "these people" : "this person";
+        if (finalReturnHelperTags.length) {
+
+            const peopleText = finalReturnHelperTags.length > 1 ? "these people" : "this person";
 
             await app.client.chat.postMessage({
                 username: BOT_NAME,
@@ -171,18 +207,27 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `Looks like you tried to tag ${peopleText}. I can help: ${returnHelperTags.join(" ")}\n\n_(Type 'undo' to have this message removed.)_`
+                text: `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")}\n\n_(Type 'undo' to have this message removed.)_`
             })
         }
 
-        if (returnSmartTags.length) {
+        if (finalReturnSmartTags.length) {
             await app.client.chat.postMessage({
                 username: DOUBLE_AT_BOT_NAME,
                 icon_emoji: DOUBLE_AT_BOT_EMOJI,
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `\`@@:\` ${returnSmartTags.join(" ")}\n\n_(Type 'undo smart' to have this message removed.)_`
+                text: `\`@@:\` ${finalReturnSmartTags.join(" ")}\n\n_(Type 'undo smart' to have this message removed.)_`
+            })
+        } else if (doubleAtWasAttemptedCount > 0 && doubleAtWasAttemptedCount > doubleAtWasIgnoredCount) {
+            await app.client.chat.postMessage({
+                username: DOUBLE_AT_BOT_NAME,
+                icon_emoji: ":warning:",
+                token: context.botToken,
+                channel: payload.channel,
+                thread_ts: payload.thread_ts || payload.ts,
+                text: `\`@@:\` [No users matched.]\n\n_(Type 'undo smart' to have this message removed.)_`
             })
         }
 
