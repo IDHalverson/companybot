@@ -2,6 +2,7 @@ const { get } = require("lodash");
 const { app } = require("../../index");
 const { asyncForEach } = require("../../utils")
 const {
+    CALLBACK_WAIT_TIME,
     SPACE_TRIM_MAX_ITERATIONS,
     SPACE_TRIM_INCREMENT_DOWN_FROM_THIS_FIRST,
     BOT_NAME,
@@ -16,7 +17,13 @@ const {
  * 
  * @param {Object} requestObjects 
  */
-const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
+const replyToTagSyntaxWithRealTag = ({ payload, context }) => {
+
+    // const helpNeededWithTags = context.matches.some(m =>
+    //     !m.startsWith("@@") && m.startsWith("@")
+    // );
+
+    // setTimeout(async () => {
     try {
 
         const { user } = await app.client.users.info({
@@ -235,6 +242,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
     } catch (e) {
         console.error(e)
     }
+    // }, helpNeededWithTags ? CALLBACK_WAIT_TIME : 0)
 }
 
 /**

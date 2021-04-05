@@ -1,5 +1,5 @@
 module.exports = {
-    REPLACE_TAG_WAIT_TIME: 4000,
+    CALLBACK_WAIT_TIME: 0, //Thought we needed, but don't
     SPACE_TRIM_MAX_ITERATIONS: 10,
     // ^^^ Must be greater than SPACE_TRIM_INCREMENT_DOWN_FROM_THIS_FIRST
     SPACE_TRIM_INCREMENT_DOWN_FROM_THIS_FIRST: 3,
