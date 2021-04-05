@@ -37,7 +37,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         let usergroups;
         const returnTags = [];
 
-        const attemptTagApplication = async (rawTagPortion, tagSplitBySpacesWithoutIgnoredPieces) => {
+        const attemptTagApplication = async (rawTagPortion) => {
             if (!loadedTaggables) {
                 await loadTaggables();
             }
@@ -68,7 +68,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                     const tagPortionToUseSplit = tagSplitBySpacesWithoutIgnoredPieces.slice(0, i);
                     const tagPortionToUse = tagPortionToUseSplit.join(" ");
                     if (lastOneWeDid === tagPortionToUse) return [false, tagPortionToUse];
-                    const success = await attemptTagApplication(tagPortionToUse, tagPortionToUseSplit);
+                    const success = await attemptTagApplication(tagPortionToUse);
                     return [success, tagPortionToUse];
                 }
                 let done = false;
