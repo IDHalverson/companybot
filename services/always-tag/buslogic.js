@@ -17,7 +17,7 @@ const {
  * 
  * @param {Object} requestObjects 
  */
-const replyToTagSyntaxWithRealTag = ({ payload, context }) => {
+const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
 
     // const helpNeededWithTags = context.matches.some(m =>
     //     !m.startsWith("@@") && m.startsWith("@")
