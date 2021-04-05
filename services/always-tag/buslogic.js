@@ -207,7 +207,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")}\n\n_(To delete, type 'undo' in the thread.)_`
+                text: `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`
             })
         }
 
@@ -218,7 +218,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `\`@@:\` ${finalReturnSmartTags.join(" ")}\n\n_(To delete, type 'undo smart' in the thread.)_`
+                text: `\`@@:\` ${finalReturnSmartTags.join(" ")} _(To delete, type 'undo smart' in the thread.)_`
             })
         } else if (doubleAtWasAttemptedCount > 0 && doubleAtWasAttemptedCount > doubleAtWasIgnoredCount) {
             await app.client.chat.postMessage({
@@ -227,7 +227,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `\`@@:\` [No users matched.]\n\n_(To delete, type 'undo smart' in the thread.)_`
+                text: `\`@@:\` [No users matched.] _(To delete, type 'undo smart' in the thread.)_`
             })
         }
 
