@@ -4,7 +4,11 @@ const { asyncForEach } = require("../../utils")
 const {
     SPACE_TRIM_MAX_ITERATIONS,
     SPACE_TRIM_INCREMENT_DOWN_FROM_THIS_FIRST,
-    BOT_NAME
+    BOT_NAME,
+    BOT_EMOJI,
+    DOUBLE_AT_BOT_NAME,
+    DOUBLE_AT_BOT_EMOJI,
+    FEATURE_FLAGS
 } = require("./constants");
 
 /**
@@ -22,6 +26,10 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         if (user.is_bot) return;
 
         let loadedTaggables = false;
+        let members;
+        let usergroups;
+        let candidatesMap;
+        let candidatesMapFormats;
 
         const loadTaggables = async () => {
             loadedTaggables = true;
@@ -31,34 +39,101 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         token: context.botToken,
                     })
                 ));
+            candidatesMap = {};
+            candidatesMapFormats = [];
+            members.forEach(member => {
+                const realNameSplit = (member.profile.real_name || "").split(" ");
+                const displayNameSplit = (member.profile.display_name || "").split(" ");
+                // get last name
+                let lastName = (member.profile.last_name || "").toLowerCase();
+                if (!lastName && realNameSplit.length === 2) {
+                    lastName = realNameSplit[1]
+                }
+                // get first name
+                let firstName = (member.profile.first_name || "").toLowerCase();
+                if (!firstName && realNameSplit.length === 2) {
+                    firstName = realNameSplit[0]
+                }
+                if (!firstName && displayNameSplit.length === 2 && displayNameSplit[1] === lastName) {
+                    firstName = displayNameSplit[0];
+                }
+                firstName = (firstName || "").toLowerCase();
+                lastName = (lastName || "").toLowerCase();
+                const f = firstName.charAt(0);
+                const l = lastName.charAt(0);
+                if (firstName && lastName && !member.is_bot && !member.deleted) {
+                    const createFormatsList = !candidatesMapFormats.length;
+                    for (let [format, key] of [
+                        ["name", (member.name || "").toLowerCase()],
+                        ["real_name", (member.profile.real_name || "").toLowerCase()],
+                        ["display_name", (member.profile.display_name || "").toLowerCase()],
+                        ["first last", `${firstName} ${lastName}`],
+                        ["initials", `${f}${l}`],
+                        ["firstl", `${firstName}${l}`],
+                        ["flast", `${f}${lastName}`],
+                        ["first_l", `${firstName}_${l}`],
+                        ["f_last", `${f}_${lastName}`],
+                        ["first-l", `${firstName}-${l}`],
+                        ["f-last", `${f}-${lastName}`],
+                        ["first", firstName],
+                        ["last", lastName]
+                    ]) {
+                        if (createFormatsList) candidatesMapFormats.push(format);
+                        candidatesMap[format] = (candidatesMap[format] || {});
+                        candidatesMap[format][key] = (candidatesMap[format][key] || []);
+                        candidatesMap[format][key].push([member.id, member])
+                    }
+                }
+            })
         }
 
-        let members;
-        let usergroups;
-        const returnTags = [];
+        const returnHelperTags = [];
+        const returnSmartTags = [];
 
-        const attemptTagApplication = async (rawTagPortion) => {
+        const attemptTagApplication = async (rawTagPortion, tagMultipleMatchedUsersWithOneTag) => {
             if (!loadedTaggables) {
                 await loadTaggables();
             }
             const taggedGroup = usergroups.find(userGroup => userGroup.handle.toLowerCase() === rawTagPortion);
-            if (taggedGroup) returnTags.push(`<!subteam^${taggedGroup.id}|@${taggedGroup.handle}>`);
+            if (taggedGroup) (
+                !tagMultipleMatchedUsersWithOneTag
+                    ? returnHelperTags
+                    : returnSmartTags
+            ).push(`<!subteam^${taggedGroup.id}|@${taggedGroup.handle}>`);
             else {
-                const taggedMember = members.find(member =>
-                    (member.name || "").toLowerCase() === rawTagPortion
-                    || (member.real_name || "").toLowerCase() === rawTagPortion
-                    || (member.profile.display_name || "").toLowerCase() === rawTagPortion
-                );
-                if (taggedMember) returnTags.push(`<@${taggedMember.id}>`);
+                const taggedMembers = [];
+                _formatsLoop: for (let format of candidatesMapFormats) {
+                    const matches = candidatesMap[format][rawTagPortion] || [];
+                    if (!tagMultipleMatchedUsersWithOneTag && matches.length === 1) {
+                        taggedMembers.push(matches[0][1]);
+                        break _formatsLoop;
+                    } else if (tagMultipleMatchedUsersWithOneTag && matches.length > 0) {
+                        matches.forEach(m => taggedMembers.push(m[1]));
+                    }
+                }
+                if (taggedMembers.length) {
+                    taggedMembers.forEach(tM => (
+                        !tagMultipleMatchedUsersWithOneTag
+                            ? returnHelperTags
+                            : returnSmartTags
+                    ).push(`<@${tM.id}>`));
+                }
             }
             return false;
         }
 
         await asyncForEach(context.matches, async (tag) => {
+            const usedDoubleAts = tag.startsWith("@@");
+            const { tagMultipleMatchedUsersWithOneTag } = FEATURE_FLAGS.usedDoubleAts[usedDoubleAts] || {};
             const tagIsActive = payload.text.includes(`<${tag}>`) ||
                 payload.text.match(new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag}\\>`));
             if (!tagIsActive) {
-                const tagRaw = tag.trim().replace(/^@/, "").replace(/\s/g, " ").replace(/[ ]{2,}/g, " ").toLowerCase();
+                const tagRaw = tag.trim()
+                    .replace(/^@/, "")
+                    .replace(/^@/, "")
+                    .replace(/\s/g, " ")
+                    .replace(/[ ]{2,}/g, " ")
+                    .toLowerCase();
                 const containsHowManySpaces = (get(tagRaw.match(/[ ]+/g), "length") || 0);
                 const desiredIterationCount = containsHowManySpaces + 1;
                 const finalIterationCount = Math.min(desiredIterationCount, SPACE_TRIM_MAX_ITERATIONS);
@@ -68,7 +143,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                     const tagPortionToUseSplit = tagSplitBySpacesWithoutIgnoredPieces.slice(0, i);
                     const tagPortionToUse = tagPortionToUseSplit.join(" ");
                     if (lastOneWeDid === tagPortionToUse) return [false, tagPortionToUse];
-                    const success = await attemptTagApplication(tagPortionToUse);
+                    const success = await attemptTagApplication(tagPortionToUse, tagMultipleMatchedUsersWithOneTag);
                     return [success, tagPortionToUse];
                 }
                 let done = false;
@@ -86,19 +161,31 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             }
         })
 
-        if (returnTags.length) {
+        if (returnHelperTags.length) {
 
-            const peopleText = returnTags.length > 1 ? "these people" : "this person";
+            const peopleText = returnHelperTags.length > 1 ? "these people" : "this person";
 
             await app.client.chat.postMessage({
                 username: BOT_NAME,
-                icon_emoji: ":tag:",
+                icon_emoji: BOT_EMOJI,
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: payload.thread_ts || payload.ts,
-                text: `Looks like you tried to tag ${peopleText}. I can help: ${returnTags.join(" ")}\n\n_(Type 'undo' to have this message removed.)_`
+                text: `Looks like you tried to tag ${peopleText}. I can help: ${returnHelperTags.join(" ")}\n\n_(Type 'undo' to have this message removed.)_`
             })
         }
+
+        if (returnSmartTags.length) {
+            await app.client.chat.postMessage({
+                username: DOUBLE_AT_BOT_NAME,
+                icon_emoji: DOUBLE_AT_BOT_EMOJI,
+                token: context.botToken,
+                channel: payload.channel,
+                thread_ts: payload.thread_ts || payload.ts,
+                text: `\`@@:\` ${returnSmartTags.join(" ")}\n\n_(Type 'undo smart' to have this message removed.)_`
+            })
+        }
+
         return;
     } catch (e) {
         console.error(e)
@@ -110,7 +197,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
  * 
  * @param {Object} requestObjects 
  */
-const undoRealTagReply = async ({ payload, context }) => {
+const undoRealTagReply = (isSmart) => async ({ payload, context }) => {
     try {
         // Only works in thread!
         if (!payload.thread_ts) return;
@@ -125,7 +212,7 @@ const undoRealTagReply = async ({ payload, context }) => {
         let passedUndoMessageWhileTraversingBackwards = false;
         let tsToDelete;
         for (let message of messages.reverse()) {
-            if (message.username === BOT_NAME) {
+            if (message.username === (isSmart ? DOUBLE_AT_BOT_NAME : BOT_NAME)) {
                 if (passedUndoMessageWhileTraversingBackwards) {
                     tsToDelete = message.ts;
                 }
