@@ -120,7 +120,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         const regex = `^${rawTagSplit.map(section =>
                             section
                                 .split("")
-                                .map(char => char.match(/[a-zA-Z]/) ? char : `\\${char}`)
+                                .map(char => char.match(/[a-zA-Z0-9]/) ? char : `\\${char}`)
                                 .join("")
                         ).join("(.)*")
                             }$`;
@@ -158,12 +158,13 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             const usedDoubleAts = tag.startsWith("@@");
             if (usedDoubleAts) doubleAtWasAttemptedCount++;
             const { tagMultipleMatchedUsersWithOneTag } = FEATURE_FLAGS.usedDoubleAts[usedDoubleAts] || {};
+            const userGroupRegex = new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag.split("")
+                .map(char => char.match(/[a-zA-Z0-9]/)
+                    ? char
+                    : `\\${char}`
+                ).join("")}\\>`);
             const tagIsActive = payload.text.includes(`<${tag}>`) ||
-                payload.text.match(new RegExp(`\\<\\!subteam\\^[A-Z0-9]+\\|${tag.split("")
-                    .map(char => char.match(/[a-zA-Z]/)
-                        ? char
-                        : `\\${char}`
-                    )}\\>`));
+                payload.text.match(userGroupRegex);
             const tagIsInvalid = tag.match(/^\@[\@]*[\?]+$/) || (tag.split(" ")[0]).match(/^\@[\@]*[\?]+$/);
             if (!tagIsActive && !tagIsInvalid) {
                 const tagRaw = tag.trim()
