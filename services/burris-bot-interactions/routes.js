@@ -8,7 +8,7 @@ const {
 const burrisBot = new BurrisBot();
 
 app.message(
-  /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z\-\_]+\>\s(.+)/,
+  /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z0-9\-\_]+\>\s(.+)/,
   burrisBotPostInChannel
 );
 
