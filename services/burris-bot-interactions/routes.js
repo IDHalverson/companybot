@@ -8,7 +8,9 @@ const {
 const burrisBot = new BurrisBot();
 
 app.message(
-  /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z0-9\-\_]+\>\s(.+)/,
+  // Adding 0-9 to the channel name causes entire message to get posted instead
+  // of specified text... TODO: fix
+  /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z\-\_]+\>\s(.+)/,
   burrisBotPostInChannel
 );
 
