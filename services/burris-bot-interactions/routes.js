@@ -21,7 +21,7 @@ app.message(
 
 app.message(/burrisbot\smessage\severyone\s?(.*)/, burrisBotMessageAllUsers);
 
-app.message(/(.)*burris(\-|\_)*bot(.)*/i, async ({ say }) => {
+app.message(/(.)*burris(\-|\_)*bot(?!\:)(.)*/i, async ({ say }) => {
   await say(burrisBot.getBurrisBotGreeting());
 });
 
