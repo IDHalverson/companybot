@@ -6,19 +6,21 @@ const {
 
 app.command("/bscp-standup", bscpStandupSlashCommandCallback);
 
-app.message(/check off \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
+const userMentionRegex = "([a-zA-Z]+[\\\\.]*[ ]*[a-zA-Z]*[\\\\.]*)"
 
-app.message(/uncheck \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
+app.message(new RegExp(`(?:check off|co|c-o|c/o|c o) ${userMentionRegex}`), someoneHasGoneCallback("check off"));
 
-app.message(/where is \<\@([A-Za-z0-9]+)\>/, someoneHasGoneCallback);
+app.message(new RegExp(`(?:uncheck|uc|u c|u-c|u/c) ${userMentionRegex}`), someoneHasGoneCallback("uncheck"));
 
-app.message(/\<\@([A-Za-z0-9]+)\> is on vacation/, someoneHasGoneCallback);
+app.message(new RegExp(`(?:where is|wi|w-i|w/i|w i) ${userMentionRegex}`), someoneHasGoneCallback("where is"));
+
+app.message(new RegExp(`${userMentionRegex} (?:is on PTO|is PTO|PTO|iop|iopto|i-o-p|i/o/p|i o p)`, 'i'), someoneHasGoneCallback("is on PTO"));
 
 app.message(
-  /\<\@([A-Za-z0-9]+)\> is taking a sick day/,
-  someoneHasGoneCallback
+  new RegExp(`${userMentionRegex} (?:is out sick|ios|is sick|i o s)`),
+  someoneHasGoneCallback("is out sick")
 );
 
-app.message(/\<\@([A-Za-z0-9]+)\> is busy/, someoneHasGoneCallback);
+app.message(new RegExp(`${userMentionRegex} (?:is busy|ib|i b|i-b|i/b)`), someoneHasGoneCallback("is busy"));
 
-app.message(/self[\- ]{1}destruct/, someoneHasGoneCallback);
+app.message(/(self[\- ]{1}destruct)/, someoneHasGoneCallback());
