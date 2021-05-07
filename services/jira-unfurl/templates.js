@@ -31,7 +31,7 @@ const jiraUnfurlAttachments = (
         jiraJson,
         "fields.project.key"
       )}|${get(jiraJson, "fields.project.name")}> | <${process.env.JIRA_MAIN_URL
-        }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <\$${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`,
+        }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`,
       footer_icon:
         "https://emoji.slack-edge.com/T01094KTUES/jira_alien_spaceship/dcaf93460f86f468.png"
     }
@@ -200,7 +200,7 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
               jiraJson,
               "fields.project.key"
             )}|${get(jiraJson, "fields.project.name")}> | <${process.env.JIRA_MAIN_URL
-              }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <\$${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`
+              }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`
           }
         ]
       }
