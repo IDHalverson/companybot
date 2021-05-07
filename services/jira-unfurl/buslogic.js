@@ -51,7 +51,8 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
             )
           };
           const key = `${jiraIdentifier}${comment ? "_comment" : ""}`;
-          if (!alreadySentMap[key]) {
+          const wasActualJiraFound = Boolean(get(jiraJson, "fields.project.name"));
+          if (wasActualJiraFound && !alreadySentMap[key]) {
             if (command && command.text) {
               postParams = {
                 ...postParams,
@@ -104,8 +105,7 @@ const jiraUnfurlDetailedCallback = async ({
       if (jiraCall && jiraCall.status === 200) {
         const jiraJson = jiraCall.data;
         console.log(
-          `JIRA unfurl: ${jiraIdentifier} in channel ${
-            command.channel_id || payload.channel
+          `JIRA unfurl: ${jiraIdentifier} in channel ${command.channel_id || payload.channel
           }`
         );
         let postParams = {
