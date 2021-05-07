@@ -8,39 +8,34 @@ const jiraUnfurlAttachments = (
   jiraIdentifier,
   comment
 ) => [
-  {
-    color: jiraBlue,
-    text: `${
-      comment ? `Comment from ${comment.author.displayName} on ` : ""
-    }<${jiraBrowseUrl}|*${jiraIdentifier}: ${
-      comment ? "" : get(jiraJson, "fields.summary", "?")
-    }*>${
-      comment
-        ? ""
-        : `\nStatus: \`${get(
+    {
+      color: jiraBlue,
+      text: `${comment ? `Comment from ${comment.author.displayName} on ` : ""
+        }<${jiraBrowseUrl}|*${jiraIdentifier}: ${comment ? "" : get(jiraJson, "fields.summary", "?")
+        }*>${comment
+          ? ""
+          : `\nStatus: \`${get(
             jiraJson,
             "fields.status.name",
             "none"
-          )}\`       Assignee: ${
-            !get(jiraJson, "fields.assignee.displayName")
-              ? "*Unassigned*"
-              : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
-                  jiraJson,
-                  "fields.assignee.name",
-                  "none"
-                )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
+          )}\`       Assignee: ${!get(jiraJson, "fields.assignee.displayName")
+            ? "*Unassigned*"
+            : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+              jiraJson,
+              "fields.assignee.name",
+              "none"
+            )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
           }       Priority: *${get(jiraJson, "fields.priority.name", "none")}*`
-    }${comment ? `\n\n${comment.body}\n` : ""}`,
-    footer: `<${process.env.JIRA_PROJECT_PREFIX}${get(
-      jiraJson,
-      "fields.project.key"
-    )}|${get(jiraJson, "fields.project.name")}> | <${
-      process.env.JIRA_MAIN_URL
-    }|${process.env.JIRA_OUTER_CONTEXT_TEXT}>`,
-    footer_icon:
-      "https://emoji.slack-edge.com/T01094KTUES/jira_alien_spaceship/dcaf93460f86f468.png"
-  }
-];
+        }${comment ? `\n\n${comment.body}\n` : ""}`,
+      footer: `<${process.env.JIRA_PROJECT_PREFIX}${get(
+        jiraJson,
+        "fields.project.key"
+      )}|${get(jiraJson, "fields.project.name")}> | <${process.env.JIRA_MAIN_URL
+        }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <\$${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`,
+      footer_icon:
+        "https://emoji.slack-edge.com/T01094KTUES/jira_alien_spaceship/dcaf93460f86f468.png"
+    }
+  ];
 
 const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
   {
@@ -62,27 +57,25 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
         fields: [
           {
             type: "mrkdwn",
-            text: `*Assignee*: ${
-              !get(jiraJson, "fields.assignee.displayName")
-                ? "*Unassigned*"
-                : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
-                    jiraJson,
-                    "fields.assignee.name",
-                    "none"
-                  )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
-            }`
+            text: `*Assignee*: ${!get(jiraJson, "fields.assignee.displayName")
+              ? "*Unassigned*"
+              : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+                jiraJson,
+                "fields.assignee.name",
+                "none"
+              )}|*${get(jiraJson, "fields.assignee.displayName", "none")}*>`
+              }`
           },
           {
             type: "mrkdwn",
-            text: `*Reporter*: ${
-              !get(jiraJson, "fields.reporter.displayName")
-                ? "*Unassigned*"
-                : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
-                    jiraJson,
-                    "fields.reporter.name",
-                    "none"
-                  )}|*${get(jiraJson, "fields.reporter.displayName", "none")}*>`
-            }`
+            text: `*Reporter*: ${!get(jiraJson, "fields.reporter.displayName")
+              ? "*Unassigned*"
+              : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+                jiraJson,
+                "fields.reporter.name",
+                "none"
+              )}|*${get(jiraJson, "fields.reporter.displayName", "none")}*>`
+              }`
           }
         ]
       },
@@ -112,10 +105,9 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
               0,
               // Seems to throw 500 errors when over ~3000 chars?
               2970
-            )}${
-              `${get(jiraJson, "fields.description", "")}`.length > 2970
-                ? " (...continued)"
-                : ""
+            )}${`${get(jiraJson, "fields.description", "")}`.length > 2970
+              ? " (...continued)"
+              : ""
             }` || "..."
         }
       },
@@ -124,23 +116,21 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
         fields: [
           {
             type: "mrkdwn",
-            text: `*Creator*: ${
-              !get(jiraJson, "fields.creator.displayName")
-                ? "*Unassigned*"
-                : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
-                    jiraJson,
-                    "fields.creator.name",
-                    "none"
-                  )}|*${get(jiraJson, "fields.creator.displayName", "none")}*>`
-            }`
+            text: `*Creator*: ${!get(jiraJson, "fields.creator.displayName")
+              ? "*Unassigned*"
+              : `<${process.env.JIRA_USER_PROFILE_PREFIX}${get(
+                jiraJson,
+                "fields.creator.name",
+                "none"
+              )}|*${get(jiraJson, "fields.creator.displayName", "none")}*>`
+              }`
           },
           {
             type: "mrkdwn",
-            text: `*Created*: ${
-              (get(jiraJson, "fields.created") &&
-                moment(get(jiraJson, "fields.created")).format("MM/DD/YYYY")) ||
+            text: `*Created*: ${(get(jiraJson, "fields.created") &&
+              moment(get(jiraJson, "fields.created")).format("MM/DD/YYYY")) ||
               "?"
-            }`
+              }`
           }
         ]
       },
@@ -149,17 +139,15 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
         fields: [
           {
             type: "mrkdwn",
-            text: `*Attachments*: ${
-              get(jiraJson, "fields.attachment", []).length
-            }`
+            text: `*Attachments*: ${get(jiraJson, "fields.attachment", []).length
+              }`
           },
           {
             type: "mrkdwn",
-            text: `*Last Updated*: ${
-              (get(jiraJson, "fields.updated") &&
-                moment(get(jiraJson, "fields.updated")).format("MM/DD/YYYY")) ||
+            text: `*Last Updated*: ${(get(jiraJson, "fields.updated") &&
+              moment(get(jiraJson, "fields.updated")).format("MM/DD/YYYY")) ||
               "?"
-            }`
+              }`
           }
         ]
       },
@@ -167,26 +155,25 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `*Worklogs*: ${
-            Object.entries(
-              get(jiraJson, "fields.worklog.worklogs", []).reduce((obj, wl) => {
-                obj[wl.author.displayName] =
-                  (obj[wl.author.displayName] || 0) + wl.timeSpentSeconds;
-                obj["Total"] = (obj["Total"] || 0) + wl.timeSpentSeconds;
-                return obj;
-              }, {})
+          text: `*Worklogs*: ${Object.entries(
+            get(jiraJson, "fields.worklog.worklogs", []).reduce((obj, wl) => {
+              obj[wl.author.displayName] =
+                (obj[wl.author.displayName] || 0) + wl.timeSpentSeconds;
+              obj["Total"] = (obj["Total"] || 0) + wl.timeSpentSeconds;
+              return obj;
+            }, {})
+          )
+            .sort((a, b) =>
+              a[0] === "Total" ? -1 : b[0] === "Total" ? 1 : 0
             )
-              .sort((a, b) =>
-                a[0] === "Total" ? -1 : b[0] === "Total" ? 1 : 0
-              )
-              .map(
-                ([user, seconds]) =>
-                  `\`${user}: ${moment
-                    .duration(seconds, "seconds")
-                    .asHours()}hrs\``
-              )
-              .join("  ") || "none"
-          }`
+            .map(
+              ([user, seconds]) =>
+                `\`${user}: ${moment
+                  .duration(seconds, "seconds")
+                  .asHours()}hrs\``
+            )
+            .join("  ") || "none"
+            }`
         }
       },
       {
@@ -212,9 +199,8 @@ const jiraDetailedAttachments = (jiraJson, jiraBrowseUrl, jiraIdentifier) => [
             text: `<${process.env.JIRA_PROJECT_PREFIX}${get(
               jiraJson,
               "fields.project.key"
-            )}|${get(jiraJson, "fields.project.name")}> | <${
-              process.env.JIRA_MAIN_URL
-            }|${process.env.JIRA_OUTER_CONTEXT_TEXT}>`
+            )}|${get(jiraJson, "fields.project.name")}> | <${process.env.JIRA_MAIN_URL
+              }|${process.env.JIRA_OUTER_CONTEXT_TEXT}> | <\$${process.env.JIRA_FINAL_FOOTER_ADDON_HREF}|${process.env.JIRA_FINAL_FOOTER_ADDON_TEXT}>`
           }
         ]
       }
