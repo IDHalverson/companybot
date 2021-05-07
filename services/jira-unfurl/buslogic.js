@@ -50,20 +50,13 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
               comment
             )
           };
-          const key = "_untilFixed";
-          // TEMPORARY UNTIL FIXED
-          // `${jiraIdentifier}${comment ? "_comment" : ""}`;
-          // const wasActualJiraFound = Boolean(get(jiraJson, "fields.project.name"));
-          if (
-            //wasActualJiraFound && 
-            !alreadySentMap[key]) {
+          const key = `${jiraIdentifier}${comment ? "_comment" : ""}`;
+          const wasActualJiraFound = Boolean(get(jiraJson, "fields.project.name"));
+          if (wasActualJiraFound && !alreadySentMap[key]) {
             if (command && command.text) {
               postParams = {
                 ...postParams,
-                response_type: "in_channel",
-                // TEMPORARY UNTIL FIXED
-                attachments: undefined,
-                text: "Sorry, Burris Bot's JIRA integration will be repaired soon."
+                response_type: "in_channel"
               };
               axios.post(command.response_url, postParams);
             } else {
@@ -71,10 +64,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
                 ...postParams,
                 channel: payload.channel,
                 reply_broadcast: false,
-                thread_ts: payload.thread_ts,
-                // TEMPORARY UNTIL FIXED
-                attachments: undefined,
-                text: "Sorry, Burris Bot's JIRA integration will be repaired soon."
+                thread_ts: payload.thread_ts
               };
               app.client.chat.postMessage(postParams);
             }
