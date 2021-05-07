@@ -5,12 +5,10 @@ const {
 } = require("./buslogic");
 const axios = require("axios");
 
-app.message(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/, jiraUnfurlCallback);
-
 // TEMPORARY UNTIL FIXED
-app.message(/((?<!([A-Z]{1,10})-?)(?:SCP|V4)-\d+)/, async ({ say }) => {
-  await say("Sorry, Burris Bot's JIRA integration will be repaired soon.")
-});
+app.message(/((?<!([A-Z]{1,10})-?)(?:SCP|V4)-\d+)/, jiraUnfurlCallback);
+
+// app.message(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/, jiraUnfurlCallback);
 
 const unavailable = async ({ context, command, ack }) => {
   ack();
