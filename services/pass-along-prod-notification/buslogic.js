@@ -19,7 +19,7 @@ const ifConfiguredPassAlongMessage = async ({ message, payload, context, }) => {
                 const frontEndDeployed = !!message.attachments[0].blocks.some(block => blockHasText(block, "main.bundle.js")) ? "Yes" : "No";
                 const backEndDeployed = !!message.attachments[0].blocks.some(block => blockHasText(block, "scp-rest-api.war")) ? "Yes" : "No";
                 const integrationDeployed = !!message.attachments[0].blocks.some(block => blockHasText(block, "scp-integration.war")) ? "Yes" : "No";
-
+                // TODO: make this more generic / confifgurable / not just BSCP?
                 app.client.chat.postMessage({
                     token: context.botToken,
                     channel: sendTo,
