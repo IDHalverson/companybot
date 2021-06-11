@@ -19,4 +19,5 @@ require("./services/jira-tagger/routes.js");
 require("./services/burris-bot-interactions/routes.js");
 require("./services/jira-unfurl/routes.js");
 require("./services/standup-checklist/routes.js");
-require ("./services/always-tag/routes.js");
+require("./services/always-tag/routes.js");
+require("./services/pass-along-prod-notification/routes.js");
