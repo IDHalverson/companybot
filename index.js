@@ -21,3 +21,4 @@ require("./services/jira-unfurl/routes.js");
 require("./services/standup-checklist/routes.js");
 require("./services/always-tag/routes.js");
 require("./services/pass-along-prod-notification/routes.js");
+require("./services/move-to-thread/routes.js")

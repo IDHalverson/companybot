@@ -1,5 +1,5 @@
 const { app } = require("../../index");
-const { getUserContext } = require("./middleware");
+const { getUserContext } = require("../../middleware");
 const {
   messageRawTextMatchCallback,
   slashSolutionsCommandCallback,
@@ -13,17 +13,17 @@ app.message(
   messageRawTextMatchCallback
 );
 
-app.command("/solutions", getUserContext, slashSolutionsCommandCallback);
+app.command("/solutions", getUserContext(), slashSolutionsCommandCallback);
 
 app.shortcut(
   "email_solutions_shortcut",
-  getUserContext,
+  getUserContext(),
   emailSolutionsMessageShortcutCallback
 );
 
 app.shortcut(
   "email_solutions_global_shortcut",
-  getUserContext,
+  getUserContext(),
   emailSolutionsGlobalShortcutCallback
 );
 
