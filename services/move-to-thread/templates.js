@@ -67,7 +67,8 @@ const getStartMessageForm = (
                     type: "button",
                     text: {
                         type: "plain_text",
-                        text: "More Options..."
+                        text: ":more_options: More Options...",
+                        emoji: true
                     },
                     action_id: "move_to_thread_more_options"
                 }
@@ -182,7 +183,7 @@ const getMoreOptionsBlockArray = (body) => {
                     {
                         text: {
                             type: "plain_text",
-                            text: ":put_litter_in_its_place: Delete the messages afterwards",
+                            text: ":wastebasket: Delete the messages afterwards",
                             emoji: true
                         },
                         value: "true"

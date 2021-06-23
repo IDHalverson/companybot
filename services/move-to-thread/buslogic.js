@@ -228,7 +228,10 @@ const moveToThreadFormSubmissionCallback = async ({
                 await app.client.chat.postMessage({
                     token: context.botToken,
                     channel: userForDelivery,
-                    text: `${fullNamesMapped[originalUserId]} sent you a Garlic Thread:\n\nhttps://burris-logistics.slack.com/archives/${channelId}/p${threadTs * 1000000}`,
+                    text: `${originalUserId === userForDelivery ?
+                            "You sent yourself"
+                            : `${fullNamesMapped[originalUserId]} sent you`
+                        } a Garlic Thread:\n\nhttps://burris-logistics.slack.com/archives/${channelId}/p${threadTs * 1000000}`,
                     unfurl_links: true,
                     username: "Garlic Thread",
                     icon_emoji: ":garlic_bread:",
