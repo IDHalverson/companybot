@@ -176,7 +176,7 @@ const getMoreOptionsBlockArray = (body) => {
                 action_id: "delete_messages_value",
                 placeholder: {
                     "type": "plain_text",
-                    "text": "Select yes/no"
+                    "text": "Select an option"
                 },
                 options: [
                     {
@@ -219,7 +219,48 @@ const getMoreOptionsBlockArray = (body) => {
                     text: `:pencil: Note: Messages with a thread of their own will _not_ be deleted.`
                 }
             ]
-        }]
+        },
+        {
+            type: "section",
+            block_id: "deliver_to_users_btn",
+            text: {
+                type: "plain_text",
+                text: " "
+            },
+            accessory: {
+                type: "button",
+                text: {
+                    type: "plain_text",
+                    text: ":mailbox_with_mail: Send This Thread To Users",
+                    emoji: true
+                },
+                action_id: "move_to_thread_deliver_to_users"
+            }
+        }
+    ]
 }
 
-module.exports = { getStartMessageForm, getMoreOptionsBlockArray }
+const getDeliverToUsersBlockArray = (body) => {
+    return [
+        {
+            type: "input",
+            block_id: "deliver_to_users",
+            element: {
+                type: "multi_users_select",
+                action_id: "deliver_to_users_value",
+                placeholder: {
+                    "type": "plain_text",
+                    "text": "Select users to receive thread"
+                },
+                initial_users: [body.view.private_metadata.split("<?sep>")[2]]
+            },
+            label: {
+                type: "plain_text",
+                text: "Deliver hot fresh :garlic_bread: garlic thread to:",
+                emoji: true
+            }
+        }
+    ]
+}
+
+module.exports = { getStartMessageForm, getMoreOptionsBlockArray, getDeliverToUsersBlockArray }

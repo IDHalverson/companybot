@@ -55,6 +55,8 @@ const moveToThreadFormSubmissionCallback = async ({
     ) || "false";
     const doDelete = doDeleteVal === "true" ? true : false;
 
+    const usersForDelivery = get(payload, "state.values.deliver_to_users.deliver_to_users_value.selected_users") || [];
+
     if (!startMessageLink || !startMessageLink.match(/^http[s]*\:\/\/burris\-logistics\.slack\.com\/archives\//)) {
         return app.client.chat.postEphemeral({
             token: context.botToken,
@@ -132,7 +134,7 @@ const moveToThreadFormSubmissionCallback = async ({
             workspace.users = workspace.users.concat(cloneDeep(allUsersResp.members));
         }
 
-        const idsOfUsersNeeded = uniq(messagesFiltered.map(message => message.bot_id || message.user));
+        const idsOfUsersNeeded = uniq(messagesFiltered.map(message => message.bot_id || message.user).concat(usersForDelivery));
 
         const fullNamesMapped = workspace.users.filter(user => idsOfUsersNeeded.includes((get(user, "profile.bot_id")) || user.id)).reduce((obj, user) => {
             obj[get(user, "profile.bot_id") || user.id] = user.real_name || get(user, "profile.real_name")
@@ -150,7 +152,7 @@ const moveToThreadFormSubmissionCallback = async ({
         const resp = await app.client.chat.postMessage({
             token: context.botToken,
             channel: channelId,
-            text: `:thread2: :thread2: :thread2: *${convoCategory}: ${threadName}* :thread2: :thread2: :thread2:\n\n *${getName(firstMessage)}*: ${firstMessage.text.substring(0, 150)}... [continued]`
+            text: `:thread2: :thread2: :thread2: *${convoCategory}: ${threadName}* :thread2: :thread2: :thread2:\n\n *${getName(firstMessage)}*: ${firstMessage.text.substring(0, 100)}... [continued]`
                 .replace(/\<\@(U[A-Z0-9]{8,12})\>/g, (_, userId) => {
                     return "@ " + fullNamesMapped[userId] || "[Unidentified User]"
                 }),
@@ -220,6 +222,32 @@ const moveToThreadFormSubmissionCallback = async ({
             icon_emoji: ":garlic_bread:"
         })
 
+        if (usersForDelivery && usersForDelivery.length) {
+            for (let userForDelivery of usersForDelivery) {
+
+                await app.client.chat.postMessage({
+                    token: context.botToken,
+                    channel: userForDelivery,
+                    text: `${fullNamesMapped[originalUserId]} sent you a Garlic Thread:\n\nhttps://burris-logistics.slack.com/archives/${channelId}/p${threadTs * 1000000}`,
+                    unfurl_links: true,
+                    username: "Garlic Thread",
+                    icon_emoji: ":garlic_bread:",
+                    parse: "full"
+                })
+
+                await app.client.chat.postEphemeral({
+                    token: context.botToken,
+                    channel: channelId,
+                    user: originalUserId,
+                    text: `Fresh Garlic Thread was delivered to ${fullNamesMapped[userForDelivery]}.`,
+                    unfurl_links: false,
+                    thread_ts: threadTs,
+                    username: "Garlic Thread",
+                    icon_emoji: ":garlic_bread:"
+                })
+            }
+        }
+
         if (doDelete) {
             const messagesToDelete = messagesFiltered.filter(message => !message.thread_ts).map(message => message.ts);
             for (let tsToDelete of messagesToDelete) {
@@ -236,7 +264,6 @@ const moveToThreadFormSubmissionCallback = async ({
 
 const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, context }) => {
     ack();
-    console.log("body", body)
 
     await client.views.update({
         view_id: body.view.id,
@@ -258,9 +285,33 @@ const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, con
     })
 }
 
+const moveToThreadDeliverToUsersCallback = async ({ ack, body, client, payload, context }) => {
+    ack();
+
+    await client.views.update({
+        view_id: body.view.id,
+        hash: body.view.hash,
+        view: {
+            type: body.view.type,
+            callback_id: body.view.callback_id,
+            title: body.view.title,
+            private_metadata: body.view.private_metadata,
+            submit: body.view.submit,
+            close: body.view.close,
+            blocks: [
+                ...body.view.blocks.filter(block => block.block_id !== "deliver_to_users_btn"),
+                ...TEMPLATES.getDeliverToUsersBlockArray(
+                    body
+                )
+            ]
+        }
+    })
+}
+
 
 module.exports = {
     moveToThreadMessageShortcutCallback,
     moveToThreadFormSubmissionCallback,
-    moveToThreadMoreOptionsCallback
+    moveToThreadMoreOptionsCallback,
+    moveToThreadDeliverToUsersCallback
 }
