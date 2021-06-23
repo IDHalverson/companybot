@@ -3,7 +3,8 @@ const { getUserContext } = require("../../middleware");
 const { get } = require("lodash");
 const {
     moveToThreadMessageShortcutCallback,
-    moveToThreadFormSubmissionCallback
+    moveToThreadFormSubmissionCallback,
+    moveToThreadMoreOptionsCallback
 } = require("./buslogic");
 
 const getUserContextMiddleware = getUserContext(
@@ -16,3 +17,5 @@ const getUserContextMiddleware = getUserContext(
 app.shortcut("move_to_thread_shortcut", getUserContextMiddleware, moveToThreadMessageShortcutCallback);
 
 app.view("move_to_thread", getUserContextMiddleware, moveToThreadFormSubmissionCallback);
+
+app.action("move_to_thread_more_options", moveToThreadMoreOptionsCallback)

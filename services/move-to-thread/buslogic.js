@@ -1,9 +1,10 @@
 const { app } = require("../../index");
 const TEMPLATES = require("./templates");
 const axios = require("axios");
-// const nodemailer = require("nodemailer");
 const { get, cloneDeep, uniq } = require("lodash");
 const moment = require("moment");
+
+// TODO: put a lot of things in CONSTANTS file.
 
 const moveToThreadMessageShortcutCallback = async ({
     context,
@@ -18,7 +19,7 @@ const moveToThreadMessageShortcutCallback = async ({
         trigger_id: body.trigger_id,
         view: TEMPLATES.getStartMessageForm(
             payload,
-            context,
+            context
         )
     });
 
@@ -38,7 +39,7 @@ const moveToThreadFormSubmissionCallback = async ({
         "state.values.start_msg_lnk.start_msg_lnk_value.value"
     );
 
-    const threadName = get(
+    let threadName = get(
         payload,
         "state.values.thread_title.thread_title_value.value"
     );
@@ -46,12 +47,12 @@ const moveToThreadFormSubmissionCallback = async ({
     const convoCategory = get(
         payload,
         "state.values.conversation_category.conversation_category_value.selected_option.value"
-    );
+    ) || "Discussion";
 
     const doDeleteVal = get(
         payload,
         "state.values.delete_messages.delete_messages_value.selected_option.value"
-    );
+    ) || "false";
     const doDelete = doDeleteVal === "true" ? true : false;
 
     if (!startMessageLink || !startMessageLink.match(/^http[s]*\:\/\/burris\-logistics\.slack\.com\/archives\//)) {
@@ -76,8 +77,8 @@ const moveToThreadFormSubmissionCallback = async ({
         let conversationResp = await app.client.conversations.history({
             token: context.botToken,
             channel: channelId,
-            latest: (latest / 1000) + 1,
-            oldest: (startMessageTs / 1000),
+            latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
+            oldest: (startMessageTs / 1000) + 0.001, //Not sure why the addition is needed :/
             inclusive: true,
             limit: 200
         });
@@ -87,8 +88,8 @@ const moveToThreadFormSubmissionCallback = async ({
             conversationResp = await app.client.conversations.history({
                 token: context.botToken,
                 channel: channelId,
-                latest: (latest / 1000) + 1,
-                oldest: (startMessageTs / 1000),
+                latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
+                oldest: (startMessageTs / 1000) + 0.001, //Not sure why the addition is needed :/
                 inclusive: true,
                 limit: 200,
                 cursor: nextCursor
@@ -104,6 +105,8 @@ const moveToThreadFormSubmissionCallback = async ({
             message.username !== "Garlic Thread"
         );
         const firstMessage = messagesFiltered[0]
+
+        if (!threadName) threadName = `had on ${moment(firstMessage.ts * 1000).format("MM/DD/YYYY")}`
 
         if (!firstMessage) return app.client.chat.postEphemeral({
             token: context.botToken,
@@ -210,7 +213,9 @@ const moveToThreadFormSubmissionCallback = async ({
                 return "@ " + fullNamesMapped[userId]
             }),
             unfurl_links: false,
-            thread_ts: threadTs
+            thread_ts: threadTs,
+            username: "Garlic Thread",
+            icon_emoji: ":garlic_bread:"
         })
 
         if (doDelete) {
@@ -227,8 +232,33 @@ const moveToThreadFormSubmissionCallback = async ({
     }
 }
 
+const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, context }) => {
+    ack();
+    console.log("body", body)
+
+    await client.views.update({
+        view_id: body.view.id,
+        hash: body.view.hash,
+        view: {
+            type: body.view.type,
+            callback_id: body.view.callback_id,
+            title: body.view.title,
+            private_metadata: body.view.private_metadata,
+            submit: body.view.submit,
+            close: body.view.close,
+            blocks: [
+                ...body.view.blocks.filter(block => block.block_id !== "more_options_btn"),
+                ...TEMPLATES.getMoreOptionsBlockArray(
+                    body
+                )
+            ]
+        }
+    })
+}
+
 
 module.exports = {
     moveToThreadMessageShortcutCallback,
-    moveToThreadFormSubmissionCallback
+    moveToThreadFormSubmissionCallback,
+    moveToThreadMoreOptionsCallback
 }
