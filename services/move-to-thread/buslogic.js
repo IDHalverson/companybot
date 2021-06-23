@@ -242,7 +242,7 @@ const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, con
         view: {
             type: body.view.type,
             callback_id: body.view.callback_id,
-            title: body.view.title,
+            title: { ...body.view.title, text: "Create Thread / Options" },
             private_metadata: body.view.private_metadata,
             submit: body.view.submit,
             close: body.view.close,
