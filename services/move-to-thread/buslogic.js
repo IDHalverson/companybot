@@ -74,7 +74,7 @@ const moveToThreadFormSubmissionCallback = async ({
         const conversation = { messages: [] }
 
         let conversationResp = await app.client.conversations.history({
-            token: process.env.ADMIN_USER_TOKEN,
+            token: context.botToken,
             channel: channelId,
             latest: (latest / 1000) + 1,
             oldest: (startMessageTs / 1000),
@@ -85,7 +85,7 @@ const moveToThreadFormSubmissionCallback = async ({
         conversation.messages = conversation.messages.concat(cloneDeep(conversationResp.messages));
         while (conversationResp.has_more && nextCursor) {
             conversationResp = await app.client.conversations.history({
-                token: process.env.ADMIN_USER_TOKEN,
+                token: context.botToken,
                 channel: channelId,
                 latest: (latest / 1000) + 1,
                 oldest: (startMessageTs / 1000),
@@ -99,9 +99,9 @@ const moveToThreadFormSubmissionCallback = async ({
 
         const messagesFiltered = conversation.messages.reverse().filter(message =>
             (!message.thread_ts || (message.thread_ts === message.ts))
-            && !message.bot_id
             && message.subtype !== "channel_join"
-            && Boolean(message.text)
+            && Boolean(message.text) &&
+            message.username !== "Garlic Thread"
         );
         const firstMessage = messagesFiltered[0]
 
@@ -129,21 +129,31 @@ const moveToThreadFormSubmissionCallback = async ({
             workspace.users = workspace.users.concat(cloneDeep(allUsersResp.members));
         }
 
-        const idsOfUsersNeeded = uniq(messagesFiltered.map(message => message.user));
+        const idsOfUsersNeeded = uniq(messagesFiltered.map(message => message.bot_id || message.user));
 
-        const fullNamesMapped = workspace.users.filter(user => idsOfUsersNeeded.includes(user.id)).reduce((obj, user) => {
-            obj[user.id] = user.real_name
+        const fullNamesMapped = workspace.users.filter(user => idsOfUsersNeeded.includes((get(user, "profile.bot_id")) || user.id)).reduce((obj, user) => {
+            obj[get(user, "profile.bot_id") || user.id] = user.real_name || get(user, "profile.real_name")
             return obj;
         }, {})
+
+        const getName = (message) => {
+            const name = fullNamesMapped[message.bot_id || message.user];
+            if (!name) {
+                if (message.bot_id) return "[Unidentified Bot]"
+                else return "[Unidentifier User]"
+            } else return name;
+        }
 
         const resp = await app.client.chat.postMessage({
             token: context.botToken,
             channel: channelId,
-            text: `*:thread2: Automatically Generated Thread :thread2: ${convoCategory}: ${threadName}* \n\n\`${fullNamesMapped[firstMessage.user]}:\` ${firstMessage.text.substring(0, 150)}... \`[continued in thread]\``
+            text: `:thread2: :thread2: :thread2: *${convoCategory}: ${threadName}* :thread2: :thread2: :thread2:\n\n *${getName(firstMessage)}*: ${firstMessage.text.substring(0, 150)}... [continued]`
                 .replace(/\<\@(U[A-Z0-9]{8,12})\>/g, (_, userId) => {
-                    return "@ " + fullNamesMapped[userId]
+                    return "@ " + fullNamesMapped[userId] || "[Unidentified User]"
                 }),
-            parse: "full"
+            unfurl_links: false,
+            username: "Garlic Thread",
+            icon_emoji: ":garlic_bread:"
         });
         const threadTs = resp.ts;
 
@@ -155,7 +165,7 @@ const moveToThreadFormSubmissionCallback = async ({
         let index = 0;
         for (let message of messagesFiltered) {
             let prefix = "";
-            const user = message.user;
+            const user = message.bot_id || message.user;
             const mom = moment(message.ts * 1000);
             const date = mom.format("MM/DD/YYYY");
 
@@ -177,7 +187,7 @@ const moveToThreadFormSubmissionCallback = async ({
             }
 
             if (newDateGotPosted || mostRecentUserHeading !== user) {
-                prefix += `\`${fullNamesMapped[user]}:\` _${mom.format("h:mma")}<<insertEndTime>>_\n\n`
+                prefix += `\`${getName(message)}:\` <https://burris-logistics.slack.com/archives/${channelId}/p${message.ts * 1000000}|_${mom.format("h:mma")}<<insertEndTime>>_>\n\n`
                 mostRecentUserHeading = user
             }
 
@@ -199,7 +209,7 @@ const moveToThreadFormSubmissionCallback = async ({
             text: threadMessageText.replace(/\<\@(U[A-Z0-9]{8,12})\>/g, (_, userId) => {
                 return "@ " + fullNamesMapped[userId]
             }),
-            parse: "full",
+            unfurl_links: false,
             thread_ts: threadTs
         })
 

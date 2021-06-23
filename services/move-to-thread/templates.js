@@ -137,7 +137,7 @@ const getStartMessageForm = (
                 element: {
                     type: "plain_text_input",
                     action_id: "thread_title_value",
-                    initial_value: `conversation on ${moment(payload.message.ts * 1000).format("MM/DD/YYYY")}`,
+                    initial_value: `had on ${moment(payload.message.ts * 1000).format("MM/DD/YYYY")}`,
                     placeholder: { type: "plain_text", text: "Make it clever" }
                 },
                 label: {
@@ -160,14 +160,16 @@ const getStartMessageForm = (
                         {
                             text: {
                                 type: "plain_text",
-                                text: "Yes"
+                                text: ":put_litter_in_its_place: Delete the messages afterwards",
+                                emoji: true
                             },
                             value: "true"
                         },
                         {
                             text: {
                                 type: "plain_text",
-                                text: "No"
+                                text: ":no_entry: Do NOT delete the messages afterwards",
+                                emoji: true
                             },
                             value: "false"
                         }
@@ -175,14 +177,15 @@ const getStartMessageForm = (
                     initial_option: {
                         text: {
                             type: "plain_text",
-                            text: "Yes"
+                            text: ":no_entry: Do NOT delete the messages afterwards",
+                            emoji: true
                         },
-                        value: "true"
+                        value: "false"
                     }
                 },
                 label: {
                     type: "plain_text",
-                    text: "Delete the old messages?:",
+                    text: "Cleanup:",
                     emoji: false
                 }
             },
