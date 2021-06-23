@@ -80,7 +80,7 @@ const moveToThreadFormSubmissionCallback = async ({
             token: context.botToken,
             channel: channelId,
             latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
-            oldest: (startMessageTs / 1000) + 0.001, //Not sure why the addition is needed :/
+            oldest: (startMessageTs / 1000), //Not sure why the addition is needed :/
             inclusive: true,
             limit: 200
         });
@@ -91,7 +91,7 @@ const moveToThreadFormSubmissionCallback = async ({
                 token: context.botToken,
                 channel: channelId,
                 latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
-                oldest: (startMessageTs / 1000) + 0.001, //Not sure why the addition is needed :/
+                oldest: (startMessageTs / 1000), //Not sure why the addition is needed :/
                 inclusive: true,
                 limit: 200,
                 cursor: nextCursor
@@ -229,8 +229,8 @@ const moveToThreadFormSubmissionCallback = async ({
                     token: context.botToken,
                     channel: userForDelivery,
                     text: `${originalUserId === userForDelivery ?
-                            "You sent yourself"
-                            : `${fullNamesMapped[originalUserId]} sent you`
+                        "You sent yourself"
+                        : `${fullNamesMapped[originalUserId]} sent you`
                         } a Garlic Thread:\n\nhttps://burris-logistics.slack.com/archives/${channelId}/p${threadTs * 1000000}`,
                     unfurl_links: true,
                     username: "Garlic Thread",
