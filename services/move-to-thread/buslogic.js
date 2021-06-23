@@ -197,7 +197,7 @@ const moveToThreadFormSubmissionCallback = async ({
             }
 
             lastMessageTime = mom.format("h:mma");
-            threadMessageText += `${prefix}${message.text}\n\n`;
+            threadMessageText += `${prefix}\t\t${message.text.replace(/\n/g, "\t\t")}\n\n`;
             index++
         }
         const startTimeMatch = threadMessageText.match(/([0-9]{1,2}\:[0-9]{1,2}[ap]m)\<\<insertEndTime\>\>/);
