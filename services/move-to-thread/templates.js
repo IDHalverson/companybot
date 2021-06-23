@@ -2,7 +2,8 @@ const moment = require("moment")
 
 const getStartMessageForm = (
     payload,
-    context
+    context,
+    private_metadata = ""
 ) => {
 
     return {
@@ -13,7 +14,7 @@ const getStartMessageForm = (
             text: "Provide Initial Message",
             emoji: true
         },
-        private_metadata: `${payload.message.ts}<?sep>${payload.channel.id}<?sep>${context.user_id}<?sep>${payload.response_url}`,
+        private_metadata: private_metadata || `${payload.message.ts}<?sep>${payload.channel.id}<?sep>${context.user_id}<?sep>${payload.response_url}`,
         submit: {
             type: "plain_text",
             text: "Create Thread",
@@ -170,15 +171,15 @@ const getMoreOptionsBlockArray = (body) => {
             }
         },
         {
-            type: "input",
+            type: "section",
             block_id: "delete_messages",
-            element: {
-                type: "static_select",
+            text: {
+                type: "plain_text",
+                text: "Cleanup:",
+            },
+            accessory: {
+                type: "radio_buttons",
                 action_id: "delete_messages_value",
-                placeholder: {
-                    "type": "plain_text",
-                    "text": "Select an option"
-                },
                 options: [
                     {
                         text: {
@@ -205,11 +206,6 @@ const getMoreOptionsBlockArray = (body) => {
                     },
                     value: "false"
                 }
-            },
-            label: {
-                type: "plain_text",
-                text: "Cleanup:",
-                emoji: false
             }
         },
         {

@@ -5,6 +5,8 @@ const {
     moveToThreadMessageShortcutCallback,
     moveToThreadFormSubmissionCallback,
     moveToThreadMoreOptionsCallback,
+    moveToThreadSelectDeleteMessagesCallback,
+    moveToThreadConfirmDeleteMessagesCallback,
     moveToThreadDeliverToUsersCallback
 } = require("./buslogic");
 
@@ -20,5 +22,13 @@ app.shortcut("move_to_thread_shortcut", getUserContextMiddleware, moveToThreadMe
 app.view("move_to_thread", getUserContextMiddleware, moveToThreadFormSubmissionCallback);
 
 app.action("move_to_thread_more_options", moveToThreadMoreOptionsCallback)
+
+app.action("delete_messages_value", moveToThreadSelectDeleteMessagesCallback)
+
+app.action(/delete_messages_value_[0-9]+/, moveToThreadSelectDeleteMessagesCallback)
+
+app.view({ callback_id: "move_to_thread_confirm_delete", type: "view_submission" }, moveToThreadConfirmDeleteMessagesCallback)
+
+app.view({ callback_id: "move_to_thread_confirm_delete", type: "view_closed" }, moveToThreadConfirmDeleteMessagesCallback)
 
 app.action("move_to_thread_deliver_to_users", moveToThreadDeliverToUsersCallback)

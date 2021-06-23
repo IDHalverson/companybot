@@ -6,6 +6,11 @@ const moment = require("moment");
 
 // TODO: put a lot of things in CONSTANTS file.
 
+// NOTE: private_metadata is used for the following:
+// {the original shortcutted message timestamp} <?sep> {the channel ID} <?sep>
+// {the user who clicked the shortcut's ID} <?sep> {the original payload response_url in case we need to post an ephemeral} <?sep>
+// {true/false string as to whether the 'deliver to users' block has been opened}
+
 const moveToThreadMessageShortcutCallback = async ({
     context,
     ack,
@@ -29,7 +34,6 @@ const moveToThreadMessageShortcutCallback = async ({
 const moveToThreadFormSubmissionCallback = async ({
     context,
     ack,
-    body,
     payload
 }) => {
     await ack()
@@ -49,9 +53,10 @@ const moveToThreadFormSubmissionCallback = async ({
         "state.values.conversation_category.conversation_category_value.selected_option.value"
     ) || "Discussion";
 
+    const deleteMessagesKey = Object.keys(get(payload, "state.values.delete_messages") || {})[0];
     const doDeleteVal = get(
         payload,
-        "state.values.delete_messages.delete_messages_value.selected_option.value"
+        `state.values.delete_messages[${deleteMessagesKey}].selected_option.value`
     ) || "false";
     const doDelete = doDeleteVal === "true" ? true : false;
 
@@ -266,7 +271,7 @@ const moveToThreadFormSubmissionCallback = async ({
 }
 
 const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, context }) => {
-    ack();
+    await ack();
 
     await client.views.update({
         view_id: body.view.id,
@@ -288,8 +293,121 @@ const moveToThreadMoreOptionsCallback = async ({ ack, body, client, payload, con
     })
 }
 
+const moveToThreadSelectDeleteMessagesCallback = async ({ ack, body, client, payload, context }) => {
+    await ack();
+
+    const doDeleteVal = get(
+        payload,
+        "selected_option.value"
+    ) || "false";
+    const doDelete = doDeleteVal === "true" ? true : false;
+
+    if (doDelete) await client.views.push({
+        hash: body.trigger_id,
+        trigger_id: body.trigger_id,
+        view: {
+            type: "modal",
+            notify_on_close: true,
+            callback_id: "move_to_thread_confirm_delete",
+            title: { type: "plain_text", text: ":warning: Confirm Delete" },
+            private_metadata: body.view.private_metadata,
+            submit: {
+                type: "plain_text",
+                text: "Confirm Selection",
+                emoji: true
+            },
+            close: {
+                type: "plain_text",
+                text: "Undo Selection",
+                emoji: true
+            },
+            "blocks": [
+                {
+                    "type": "section",
+                    "block_id": "confirm_delete_button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Are you sure you want to delete the old messages?\n\nNOTE: Photos and attachments will not be moved into the new thread, and may be lost."
+                    }
+                }
+            ]
+        }
+    })
+}
+
+const moveToThreadConfirmDeleteMessagesCallback = async ({ ack, body, client, payload, context }) => {
+    await ack();
+
+    const undoSelection = body.type === "view_closed";
+
+    if (undoSelection) {
+        const wasDeliverToUsersOpen = payload.private_metadata.split("<?sep>")[4] == "true";
+        await client.views.update({
+
+            view_id: body.view.previous_view_id,
+            // hash: body.view.hash,
+            view: {
+                ...TEMPLATES.getStartMessageForm(
+                    payload, context, payload.private_metadata
+                ),
+                private_metadata: payload.private_metadata,
+                blocks: [
+                    ...TEMPLATES.getStartMessageForm(payload, context, payload.private_metadata).blocks,
+                    ...TEMPLATES.getMoreOptionsBlockArray({ view: { private_metadata: payload.private_metadata } }).map(block =>
+                        block.block_id === "delete_messages" ?
+                            {
+                                type: "section",
+                                block_id: "delete_messages",
+                                text: {
+                                    type: "plain_text",
+                                    text: "Cleanup:",
+                                },
+                                accessory: {
+                                    type: "radio_buttons",
+                                    action_id: `delete_messages_value_${Date.now()}`, //Resets value to false
+                                    options: [
+                                        {
+                                            text: {
+                                                type: "plain_text",
+                                                text: ":wastebasket: Delete the messages afterwards",
+                                                emoji: true
+                                            },
+                                            value: "true"
+                                        },
+                                        {
+                                            text: {
+                                                type: "plain_text",
+                                                text: ":no_entry: Do NOT delete the messages afterwards",
+                                                emoji: true
+                                            },
+                                            value: "false"
+                                        }
+                                    ],
+                                    initial_option: {
+                                        text: {
+                                            type: "plain_text",
+                                            text: ":no_entry: Do NOT delete the messages afterwards",
+                                            emoji: true
+                                        },
+                                        value: "false"
+                                    }
+                                }
+                            }
+                            :
+                            block
+                    ),
+                    ...(wasDeliverToUsersOpen ?
+                        TEMPLATES.getDeliverToUsersBlockArray({ view: { private_metadata: payload.private_metadata } }) : []
+                    )
+                ].filter(block => block.block_id !== "more_options_btn" && (!wasDeliverToUsersOpen || block.block_id !== "deliver_to_users_btn"))
+            }
+        })
+
+    }
+}
+
 const moveToThreadDeliverToUsersCallback = async ({ ack, body, client, payload, context }) => {
-    ack();
+    await ack();
 
     await client.views.update({
         view_id: body.view.id,
@@ -298,7 +416,7 @@ const moveToThreadDeliverToUsersCallback = async ({ ack, body, client, payload, 
             type: body.view.type,
             callback_id: body.view.callback_id,
             title: body.view.title,
-            private_metadata: body.view.private_metadata,
+            private_metadata: `${body.view.private_metadata}<?sep>${true}`,
             submit: body.view.submit,
             close: body.view.close,
             blocks: [
@@ -316,5 +434,7 @@ module.exports = {
     moveToThreadMessageShortcutCallback,
     moveToThreadFormSubmissionCallback,
     moveToThreadMoreOptionsCallback,
+    moveToThreadSelectDeleteMessagesCallback,
+    moveToThreadConfirmDeleteMessagesCallback,
     moveToThreadDeliverToUsersCallback
 }
