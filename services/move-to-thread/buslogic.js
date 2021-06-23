@@ -190,7 +190,9 @@ const moveToThreadFormSubmissionCallback = async ({
             }
 
             if (newDateGotPosted || mostRecentUserHeading !== user) {
-                prefix += `\`${getName(message)}:\` <https://burris-logistics.slack.com/archives/${channelId}/p${message.ts * 1000000}|_${mom.format("h:mma")}<<insertEndTime>>_>\n\n`
+                const dateWithLink = doDelete ? `_${mom.format("h:mma")}<<insertEndTime>>_` :
+                    `<https://burris-logistics.slack.com/archives/${channelId}/p${message.ts * 1000000}|_${mom.format("h:mma")}<<insertEndTime>>_>`
+                prefix += `\`${getName(message)}:\` ${dateWithLink}\n\n`
                 mostRecentUserHeading = user
             }
 
