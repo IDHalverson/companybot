@@ -249,20 +249,32 @@ const respondToBscpStandupWorkflowStep = {
     await ack();
     await configure({
       blocks: [{
-        type: 'section',
-        text: {
+        type: 'input',
+        block_id: 'password',
+        element: {
+          type: "plain_text_input",
+          action_id: "password_text",
+          placeholder: {
+            type: "plain_text",
+            text: "Enter password"
+          }
+        },
+        label: {
           type: "plain_text",
-          text: 'Click save.'
+          text: 'Type workflow step password then click save.'
         }
       }]
     })
   },
-  save: async ({ ack, step, update }) => {
+  save: async ({ ack, step, view, update }) => {
     await ack();
+    const pass = get(view, "state.values.password.password_text.value");
+    if (pass !== process.env.PASSWORD_TO_USE_CHECKLIST_WORKFLOW_STEP) {
+      throw new Error("Unauthorized attempt to use automated BSCP checklist.")
+    }
     await update({ inputs: {}, outputs: [] })
   },
   execute: async ({ step, complete, fail }) => {
-    console.log("execute!")
     await bscpStandupSlashCommandCallback({
       devOverrideToken: process.env.ADMIN_USER_TOKEN,
       devOverrideChannelId: process.env.STANDUP_CHECKLIST_CHANNEL,
