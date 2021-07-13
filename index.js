@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { App } = require("@slack/bolt");
+const { App, WorkflowStep } = require("@slack/bolt");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -11,7 +11,7 @@ const app = new App({
   console.log("Burris Bot is now running!");
 })();
 
-module.exports = { app };
+module.exports = { app, WorkflowStep };
 
 require("./services/email-solutions/routes.js");
 require("./services/listen-for-here/routes.js");

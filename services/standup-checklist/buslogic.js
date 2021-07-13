@@ -2,11 +2,17 @@ const { app } = require("../../index");
 const { get, uniq, attempt } = require("lodash");
 const TEMPLATES = require("./templates");
 
-const getStandupUsers = async (context,) => {
+const isStandupMessage = (messageUsername, messageText) =>
+  (messageUsername &&
+    messageUsername === "Standup Checklist") ||
+  (messageText &&
+    messageText.startsWith("(automatically posted at 9:15am)"));
+
+const getStandupUsers = async (context, devOverrideToken) => {
   const userIds = process.env.STANDUP_USER_IDS.split(",");
 
   const userResps = await Promise.all(userIds.map(userId => app.client.users.info({
-    token: context.botToken,
+    token: devOverrideToken || context.botToken,
     user: userId
   })))
   const users = userResps.map(resp => resp.user);
@@ -16,43 +22,45 @@ const getStandupUsers = async (context,) => {
   return usersInOrder;
 }
 
-const bscpStandupSlashCommandCallback = async ({ command, context, ack }) => {
+const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, context, devOverrideToken, ack, isAutomated = false }) => {
   try {
-    await ack();
+    await (ack && ack());
     console.log("Creating Standup checklist");
 
-    const usersInOrder = await getStandupUsers(context);
+    const usersInOrder = await getStandupUsers(context, devOverrideToken);
 
     const approximateTimestamp = Date.now();
 
+    // Note: when devOverrideToken is an admin token, it will not post
+    // as the bot. It will post as the admin user.
     await app.client.chat.postMessage({
-      token: context.botToken,
+      token: devOverrideToken || context.botToken,
       username: "Standup Checklist",
       icon_emoji: ":mega:",
-      channel: command.channel_id,
-      text: TEMPLATES.standupTemplate(usersInOrder)
+      channel: devOverrideChannelId || command.channel_id,
+      text: TEMPLATES.standupTemplate(usersInOrder, isAutomated)
     });
 
     const messages = await app.client.conversations.history({
-      token: context.botToken,
-      channel: command.channel_id,
+      token: devOverrideToken || context.botToken,
+      channel: devOverrideChannelId || command.channel_id,
       inclusive: true,
       limit: 1,
       latest: approximateTimestamp
     });
     const messageUsername = get(messages, "messages[0].username");
+    const messageText = get(messages, "messages[0].text");
     const messageTS = get(messages, "messages[0].ts");
 
     if (
-      messageUsername &&
-      messageUsername === "Standup Checklist"
+      isStandupMessage(messageUsername, messageText)
     ) {
       await app.client.chat.postMessage({
-        token: context.botToken,
+        token: devOverrideToken || context.botToken,
         username: messageUsername,
         icon_emoji: ":mega:",
-        channel: command.channel_id,
-        text: TEMPLATES.standupHelperText(usersInOrder),
+        channel: devOverrideChannelId || command.channel_id,
+        text: TEMPLATES.standupHelperText(usersInOrder, isAutomated),
         thread_ts: messageTS
       });
     }
@@ -66,6 +74,8 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     ack && (await ack());
     const userIdentifier = get(context, "matches[1]");
     const actionText = overrideMatchText || get(context, "matches[0]");
+    // EARLY RETURN
+    if ((get(context, "matches.input")).startsWith("*Usage: *")) return;
     const messages = await app.client.conversations.history({
       token: context.botToken,
       channel: payload.channel,
@@ -77,8 +87,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     const messageUsername = get(messages, "messages[0].username");
     if (
       payload.thread_ts &&
-      messageUsername &&
-      messageUsername === "Standup Checklist"
+      isStandupMessage(messageUsername, messageText)
     ) {
       console.log(`Applying command to Standup checklist: ${actionText}`);
       const deleteIt =
@@ -223,7 +232,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
       }
 
       await app.client.chat[deleteIt ? "delete" : "update"]({
-        token: context.botToken,
+        token: process.env.ADMIN_USER_TOKEN,
         channel: payload.channel,
         ts: payload.thread_ts,
         as_user: true,
@@ -235,7 +244,36 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
   }
 };
 
+const respondToBscpStandupWorkflowStep = {
+  edit: async ({ ack, step, configure }) => {
+    await ack();
+    await configure({
+      blocks: [{
+        type: 'section',
+        text: {
+          type: "plain_text",
+          text: 'Click save.'
+        }
+      }]
+    })
+  },
+  save: async ({ ack, step, update }) => {
+    await ack();
+    await update({ inputs: {}, outputs: [] })
+  },
+  execute: async ({ step, complete, fail }) => {
+    console.log("execute!")
+    await bscpStandupSlashCommandCallback({
+      devOverrideToken: process.env.ADMIN_USER_TOKEN,
+      devOverrideChannelId: process.env.STANDUP_CHECKLIST_CHANNEL,
+      isAutomated: true
+    })
+    await complete({ outputs: {} })
+  },
+}
+
 module.exports = {
   bscpStandupSlashCommandCallback,
-  someoneHasGoneCallback
+  someoneHasGoneCallback,
+  respondToBscpStandupWorkflowStep
 };

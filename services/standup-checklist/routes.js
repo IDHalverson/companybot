@@ -1,7 +1,8 @@
-const { app } = require("../../index");
+const { app, WorkflowStep } = require("../../index");
 const {
   bscpStandupSlashCommandCallback,
-  someoneHasGoneCallback
+  someoneHasGoneCallback,
+  respondToBscpStandupWorkflowStep
 } = require("./buslogic");
 
 app.command("/bscp-standup", bscpStandupSlashCommandCallback);
@@ -24,3 +25,5 @@ app.message(
 app.message(new RegExp(`${userMentionRegex} (?:is busy|ib|i b|i-b|i/b)`), someoneHasGoneCallback("is busy"));
 
 app.message(/(self[\- ]{1}destruct)/, someoneHasGoneCallback());
+
+app.step(new WorkflowStep('bscp_standup_workflow_step', respondToBscpStandupWorkflowStep))
