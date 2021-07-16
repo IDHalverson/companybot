@@ -1,5 +1,5 @@
 // If you change this, the logic may need to adjust how it detects/pattern-matches these messages
-const standupTemplate = (users, isAutomated) => `${isAutomated ? "(automatically posted at 9:15am)\n\n" : ""
+const standupTemplate = (users, isAutomated) => `${isAutomated ? "(automatically posted)\n\n" : ""
   }${users.map((user) => `:black_small_square: ${user.real_name}`).join("\n")
   }`;
 
@@ -15,7 +15,7 @@ Examples: (type these *in the thread*)
 \tSmith \`is out sick\`
 \tJ. Smith \`is busy\`
   
-To delete checklist, type \`self-destruct\`${isAutomated ? "\n\n(automatically posted at 9:15am)" : ""
+To delete checklist, type \`self-destruct\`${isAutomated ? "\n\n(automatically posted)" : ""
   }`
 
 module.exports = {

@@ -1,12 +1,19 @@
 const { app } = require("../../index");
 const { get, uniq, attempt } = require("lodash");
 const TEMPLATES = require("./templates");
+const moment = require("moment");
 
 const isStandupMessage = (messageUsername, messageText) =>
   (messageUsername &&
     messageUsername === "Standup Checklist") ||
   (messageText &&
-    messageText.startsWith("(automatically posted at 9:15am)"));
+    messageText.startsWith("(automatically posted"));
+// Uncomment this to temporarily do cleanup of already deleted checklists
+// || messageText.startsWith("This message was deleted.");
+
+const isUsageMessage = (context) => (get(context, "matches.input")).startsWith("*Usage: *")
+
+const didBotPost = (messageUsername) => messageUsername === "Standup Checklist";
 
 const getStandupUsers = async (context, devOverrideToken) => {
   const userIds = process.env.STANDUP_USER_IDS.split(",");
@@ -75,7 +82,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     const userIdentifier = get(context, "matches[1]");
     const actionText = overrideMatchText || get(context, "matches[0]");
     // EARLY RETURN
-    if ((get(context, "matches.input")).startsWith("*Usage: *")) return;
+    if (isUsageMessage(context)) return;
     const messages = await app.client.conversations.history({
       token: context.botToken,
       channel: payload.channel,
@@ -231,16 +238,168 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
           };
       }
 
-      await app.client.chat[deleteIt ? "delete" : "update"]({
-        token: process.env.ADMIN_USER_TOKEN,
-        channel: payload.channel,
-        ts: payload.thread_ts,
-        as_user: true,
-        ...textObj
-      });
+      let replies = { messages: [] };
+      let todaysMessages = { messages: [] };
+      if (deleteIt) {
+        try {
+          replies = await app.client.conversations.replies({
+            token: context.botToken,
+            channel: payload.channel,
+            ts: payload.thread_ts
+          });
+        } catch (e) {
+          if (e.message.includes("thread_not_found")) {
+            // do nothing
+          } else {
+            throw e;
+          }
+        }
+        todaysMessages = await app.client.conversations.history({
+          token: context.botToken,
+          channel: payload.channel,
+          inclusive: true,
+          oldest: ((Number(payload.thread_ts) + 60) - 14400), // 4 hours prior
+          limit: 300
+        });
+      }
+
+      const botPosted = didBotPost(messageUsername);
+
+      try {
+        await app.client.chat[deleteIt ? "delete" : "update"]({
+          token: botPosted ? context.botToken : process.env.ADMIN_USER_TOKEN,
+          channel: payload.channel,
+          ts: payload.thread_ts,
+          as_user: true,
+          ...textObj
+        });
+      } catch (e) {
+        if (deleteIt && e.message.includes("message_not_found")) {
+          // do nothing
+        } else {
+          throw e;
+        }
+      }
+
+      // re-usable function
+      const deleteReplies = async (repliesResp, onlyIfAllBotMessages = false) => {
+        if (onlyIfAllBotMessages && get(repliesResp, "messages").some(r => r.subtype !== "bot_message")) {
+          /* EARLY RETURN */ return true; // there was user conversation
+        }
+        for (let reply of get(repliesResp, "messages")) {
+          if (reply.ts !== payload.thread_ts /* already deleted */ && !reply.hidden) {
+            try {
+              await app.client.chat.delete({
+                token: process.env.ADMIN_USER_TOKEN,
+                channel: payload.channel,
+                ts: reply.ts,
+              })
+            } catch (e) {
+              if (e.message.includes("message_not_found")) {
+                // do nothing
+              } else {
+                errors.push(e)
+              }
+            }
+          }
+        }
+      }
+
+      const errors = [];
+      const skippedDueToPossibleUserConversation = [];
+      if (deleteIt) {
+
+        await deleteReplies(replies)
+
+        for (let todayMessage of get(todaysMessages, "messages")) {
+          const isStandupBot = (todayMessage.subtype === "bot_message" && [
+            "Standup Checklist",
+            "Standup Update",
+            "BSCP Standup2",
+            "BSCP Standup1",
+            "BSCP Standup3",
+            "Ack",
+          ].includes(todayMessage.username));
+          const isAutomaticAdminStandupMessage = (
+            (todayMessage.text || "").includes("(automatically posted") && todayMessage.username === "Ian Halverson"
+          );
+
+          if ((isStandupBot || isAutomaticAdminStandupMessage) && !todayMessage.hidden) {
+
+            let wasThereUserConversation = false;
+            if ((todayMessage.reply_count || 0) > 0) {
+              try {
+                const todayMessageRepliesResp = await app.client.conversations.replies({
+                  token: context.botToken,
+                  channel: payload.channel,
+                  ts: todayMessage.ts
+                });
+                wasThereUserConversation = await deleteReplies(todayMessageRepliesResp, true)
+              } catch (e) {
+                if (e.message.includes("thread_not_found")) {
+                  // do nothing
+                } else {
+                  errors.push(e)
+                }
+              }
+            }
+
+            try {
+              if (!wasThereUserConversation) {
+                await app.client.chat.delete({
+                  token: process.env.ADMIN_USER_TOKEN,
+                  channel: payload.channel,
+                  ts: todayMessage.ts,
+                })
+              } else {
+                skippedDueToPossibleUserConversation.push(todayMessage.text)
+              }
+            } catch (e) {
+              if (e.message.includes("message_not_found")) {
+                // do nothing
+              } else {
+                errors.push(e)
+              }
+            }
+          }
+        }
+
+        if (skippedDueToPossibleUserConversation.length) {
+          const notifyText = "During deletion, these were skipped due to user conversation preservation:"
+            + `\n\n${skippedDueToPossibleUserConversation.map(s => `${s.substring(0, 75)} [.....]`).join("\n\`--------\`\n")}`
+          console.log(notifyText);
+          await app.client.chat.postEphemeral({
+            token: process.env.ADMIN_USER_TOKEN,
+            channel: payload.channel,
+            user: payload.user,
+            text: notifyText,
+            attachments: []
+          })
+        }
+
+        if (errors.length) {
+          errors.forEach(e => {
+            console.error(e.stack)
+          });
+          await app.client.chat.postEphemeral({
+            token: process.env.ADMIN_USER_TOKEN,
+            channel: payload.channel,
+            user: payload.user,
+            text: errors.map(e => e.message).join("\n\n"),
+            attachments: []
+          })
+        }
+      }
     }
   } catch (e) {
     console.error(e.stack);
+    await app.client.chat.postEphemeral({
+      token: process.env.ADMIN_USER_TOKEN,
+      channel: payload.channel,
+      user: payload.user,
+      text: e.message,
+      attachments: []
+    })
   }
 };
 
