@@ -64,8 +64,8 @@ const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, 
     ) {
       await app.client.chat.postMessage({
         token: devOverrideToken || context.botToken,
-        username: messageUsername,
-        icon_emoji: ":mega:",
+        username: ".",
+        icon_emoji: ":information_source:",
         channel: devOverrideChannelId || command.channel_id,
         text: TEMPLATES.standupHelperText(usersInOrder, isAutomated),
         thread_ts: messageTS
