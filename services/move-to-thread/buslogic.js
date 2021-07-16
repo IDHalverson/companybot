@@ -159,8 +159,9 @@ const moveToThreadFormSubmissionCallback = async ({
             channel: channelId,
             text: `:thread2: :thread2: :thread2: *${convoCategory}: ${threadName}* :thread2: :thread2: :thread2:\n\n *${getName(firstMessage)}*: ${firstMessage.text.substring(0, 100)}... [continued]`
                 .replace(/\<\@(U[A-Z0-9]{8,12})\>/g, (_, userId) => {
-                    return "@ " + fullNamesMapped[userId] || "[Unidentified User]"
-                }),
+                    return "*@ " + (fullNamesMapped[userId] || "[Unidentified User]") + "*"
+                })
+                .replace(/\<\!here\>/g, "*@ here*").replace(/\<\!channel\>/g, "*@ channel*"),
             unfurl_links: false,
             username: "Garlic Thread",
             icon_emoji: ":garlic_bread:"
@@ -219,8 +220,8 @@ const moveToThreadFormSubmissionCallback = async ({
             token: context.botToken,
             channel: channelId,
             text: threadMessageText.replace(/\<\@(U[A-Z0-9]{8,12})\>/g, (_, userId) => {
-                return "@ " + fullNamesMapped[userId]
-            }),
+                return "*@ " + fullNamesMapped[userId] + "*"
+            }).replace(/\<\!here\>/g, "*@ here*").replace(/\<\!channel\>/g, "*@ channel*"),
             unfurl_links: false,
             thread_ts: threadTs,
             username: "Garlic Thread",
