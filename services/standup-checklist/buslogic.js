@@ -97,9 +97,25 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
       isStandupMessage(messageUsername, messageText)
     ) {
       console.log(`Applying command to Standup checklist: ${actionText}`);
+      const inp = get(context, "matches.input");
       const deleteIt =
-        actionText.includes("self-destruct") ||
-        actionText.includes("self destruct");
+        [
+          "self-destruct",
+          "self destruct",
+          "destroy",
+          "delete list",
+          "delete-list",
+          "delete checklist",
+          "delete-checklist",
+        ].some(keyTerm => actionText.includes(keyTerm)) ||
+        [
+          "sd",
+          "s-d",
+          "dc",
+          "dl",
+          "d",
+          "delete"
+        ].includes(inp); //entire input === this
 
       let identifierToReport = userIdentifier;
       let matchedUsers;

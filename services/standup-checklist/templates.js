@@ -14,8 +14,8 @@ Examples: (type these *in the thread*)
 \tJ. S. \`is on PTO\`
 \tSmith \`is out sick\`
 \tJ. Smith \`is busy\`
-  
-To delete checklist, type \`self-destruct\`${isAutomated ? "\n\n(automatically posted)" : ""
+\t(deletion:) \`self-destruct\`,\`s-d\`,\`destroy\`,
+\t\`delete list\`,\`dl\`${isAutomated ? "\n\n(automatically posted)" : ""
   }`
 
 module.exports = {

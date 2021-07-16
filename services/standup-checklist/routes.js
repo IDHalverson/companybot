@@ -25,5 +25,10 @@ app.message(
 app.message(new RegExp(`${userMentionRegex} (?:is busy|ib|i b|i-b|i/b)`), someoneHasGoneCallback("is busy"));
 
 app.message(/(self[\- ]{1}destruct)/, someoneHasGoneCallback());
+app.message(/(destroy)/, someoneHasGoneCallback());
+app.message(/(delete[\- ]{1}list)/, someoneHasGoneCallback());
+app.message(/(delete[\- ]{1}checklist)/, someoneHasGoneCallback());
+app.message(/^(sd|s\-d|dc|dl|d|delete)$/, someoneHasGoneCallback());
+
 
 app.step(new WorkflowStep('bscp_standup_workflow_step', respondToBscpStandupWorkflowStep))
