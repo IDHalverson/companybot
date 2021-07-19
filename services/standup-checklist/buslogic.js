@@ -334,6 +334,8 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
             "BSCP Standup2",
             "BSCP Standup1",
             "BSCP Standup3",
+            "Weekly Planning Meeting1",
+            "Weekly Planning Meeting2",
             "Ack",
           ].includes(todayMessage.username));
           const isAutomaticAdminStandupMessage = (
