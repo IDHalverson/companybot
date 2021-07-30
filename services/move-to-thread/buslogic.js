@@ -81,11 +81,13 @@ const moveToThreadFormSubmissionCallback = async ({
 
         const conversation = { messages: [] }
 
+        const oldestTimestamp = (Number(startMessageTs.toFixed(1).split(".")[0]) / 1000) + "." + startMessageTs.toFixed(1).split(".")[1];
+
         let conversationResp = await app.client.conversations.history({
             token: context.botToken,
             channel: channelId,
             latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
-            oldest: (Number(startMessageTs.toFixed(1).split(".")[0]) / 1000) + "." + startMessageTs.toFixed(1).split(".")[1], //Not sure why the addition is needed :/ //Sometimes it has 1 decimal place, detect this!!!
+            oldest: oldestTimestamp,
             inclusive: true,
             limit: 200
         });
@@ -96,7 +98,7 @@ const moveToThreadFormSubmissionCallback = async ({
                 token: context.botToken,
                 channel: channelId,
                 latest: (latest / 1000) + 1, //Not sure why the addition is needed :/
-                oldest: (Number(startMessageTs.toFixed(1).split(".")[0]) / 1000) + "." + startMessageTs.toFixed(1).split(".")[1], //Not sure why the addition is needed :/  //Sometimes it has 1 decimal place, detect this!!!
+                oldest: oldestTimestamp,
                 inclusive: true,
                 limit: 200,
                 cursor: nextCursor
