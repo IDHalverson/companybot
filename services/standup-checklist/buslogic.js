@@ -97,6 +97,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
       isStandupMessage(messageUsername, messageText)
     ) {
       console.log(`Applying command to Standup checklist: ${actionText}`);
+      const wasAutomatic = messageText.includes("(automatically posted");
       const inp = get(context, "matches.input");
       const deleteIt =
         [
@@ -221,13 +222,15 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
         textObj = deleteIt
           ? {}
           : {
-            text: `:black_small_square: ${userFullName}\n${messageText
-              .replace(
-                new RegExp(
-                  `\\:[a-z0-9\\_\\-]+\\:\\s(\\~)?${userFullName}(\\~)?(\\n)?`
-                ),
-                ""
-              )}`
+            text: `${wasAutomatic
+              ? "(automatically posted)\n\n"
+              : ""}:black_small_square: ${userFullName}\n${messageText
+                .replace(
+                  new RegExp(
+                    `\\:[a-z0-9\\_\\-]+\\:\\s(\\~)?${userFullName}(\\~)?(\\n)?`
+                  ),
+                  ""
+                ).replace(/\(automatically posted\)\n\n/g, "")}`
           };
       } else if (isChangeEvent) {
         textObj = deleteIt
