@@ -418,6 +418,9 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
       token: process.env.ADMIN_USER_TOKEN,
       channel: payload.channel,
       user: payload.user,
+      as_user: false,
+      username: "Error",
+      icon_emoji: ":warning:",
       text: e.message,
       attachments: []
     })
