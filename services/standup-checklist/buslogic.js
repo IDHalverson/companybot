@@ -34,6 +34,8 @@ const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, 
     await (ack && ack());
     console.log("Creating Standup checklist");
 
+    throw new Error("testing!!!")
+
     const usersInOrder = await getStandupUsers(context, devOverrideToken);
 
     const approximateTimestamp = Date.now();
