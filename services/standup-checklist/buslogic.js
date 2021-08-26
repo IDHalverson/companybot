@@ -3,6 +3,23 @@ const { get, uniq, attempt } = require("lodash");
 const TEMPLATES = require("./templates");
 const moment = require("moment");
 
+const postAsOrElseAdmin = async (context, method, config) => {
+  try {
+    await app.client.chat[method]({
+      ...config,
+      token: context.botToken,
+    })
+  } catch (e) {
+    try {
+      await app.client.chat[method]({
+        token: process.env.ADMIN_USER_TOKEN,
+      })
+    } catch (e) {
+      console.error(e.stack);
+    }
+  }
+}
+
 const isStandupMessage = (messageUsername, messageText) =>
   (messageUsername &&
     messageUsername === "Standup Checklist") ||
@@ -79,7 +96,6 @@ const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, 
 const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context, ack }) => {
   try {
     ack && (await ack());
-    throw new Error("testing!!!")
 
     const userIdentifier = get(context, "matches[1]");
     const actionText = overrideMatchText || get(context, "matches[0]");
@@ -390,9 +406,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
         if (skippedDueToPossibleUserConversation.length) {
           const notifyText = "During deletion, these were skipped due to user conversation preservation:"
             + `\n\n${skippedDueToPossibleUserConversation.map(s => `${s.substring(0, 75)} [.....]`).join("\n\`--------\`\n")}`
-          console.log(notifyText);
-          await app.client.chat.postEphemeral({
-            token: process.env.ADMIN_USER_TOKEN,
+          await postAsOrElseAdmin(context, "postEphemeral", {
             channel: payload.channel,
             user: payload.user,
             text: notifyText,
@@ -404,8 +418,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
           errors.forEach(e => {
             console.error(e.stack)
           });
-          await app.client.chat.postEphemeral({
-            token: process.env.ADMIN_USER_TOKEN,
+          await postAsOrElseAdmin(context, "postEphemeral", {
             channel: payload.channel,
             user: payload.user,
             text: errors.map(e => e.message).join("\n\n"),
@@ -416,11 +429,10 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     }
   } catch (e) {
     console.error(e.stack);
-    await app.client.chat.postEphemeral({
-      token: process.env.ADMIN_USER_TOKEN,
+    postAsOrElseAdmin(context, "postEphemeral", {
       channel: payload.channel,
       user: payload.user,
-      text: e.message,
+      text: `Burris-Bot Error: \`${e.message}\`. See <https://dashboard.heroku.com/apps/burris-bot/logs|logs> for more info.`,
       attachments: []
     })
   }
