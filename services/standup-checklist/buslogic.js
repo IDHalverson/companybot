@@ -34,8 +34,6 @@ const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, 
     await (ack && ack());
     console.log("Creating Standup checklist");
 
-    throw new Error("testing!!!")
-
     const usersInOrder = await getStandupUsers(context, devOverrideToken);
 
     const approximateTimestamp = Date.now();
@@ -81,6 +79,8 @@ const bscpStandupSlashCommandCallback = async ({ command, devOverrideChannelId, 
 const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context, ack }) => {
   try {
     ack && (await ack());
+    throw new Error("testing!!!")
+
     const userIdentifier = get(context, "matches[1]");
     const actionText = overrideMatchText || get(context, "matches[0]");
     // EARLY RETURN
