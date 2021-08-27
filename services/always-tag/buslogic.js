@@ -105,12 +105,18 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 await loadTaggables();
             }
             const taggedGroup = usergroups.find(userGroup => userGroup.handle.toLowerCase() === rawTagPortion);
+            const taggedHereOrChannel = ["here", "channel"].find(hereOrChannel => hereOrChannel === rawTagPortion);
             if (taggedGroup) (
                 !tagMultipleMatchedUsersWithOneTag
                     ? returnHelperTags
                     : returnSmartTags
             ).push(`<!subteam^${taggedGroup.id}|@${taggedGroup.handle}>`);
-            else {
+            else if (taggedHereOrChannel) {
+                (!tagMultipleMatchedUsersWithOneTag
+                    ? returnHelperTags
+                    : returnSmartTags
+                ).push(`<!${taggedHereOrChannel}>`)
+            } else {
                 const taggedMembers = [];
                 _formatsLoop: for (let format of candidatesMapFormats) {
                     let keys = [rawTagPortion];
@@ -210,16 +216,24 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         const finalReturnSmartTags = filterThem(returnSmartTags);
 
         if (finalReturnHelperTags.length) {
+            const isMultipleHelperTags = finalReturnHelperTags.length > 1;
 
-            const peopleText = finalReturnHelperTags.length > 1 ? "these people" : "this person";
+            const peopleText = isMultipleHelperTags ? "these people" : "this person";
+            let text = `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`;
+            const isHereOrChannel = text.match(/(\<!here\>|\<!channel\>)/);
+            if (isHereOrChannel) {
+                text = text.replace(/(tag these people|tag this person)/, `use th${isMultipleHelperTags ? "ese" : "is"} tag${isMultipleHelperTags ? "s" : ""}`);
+                text = text.replace("To delete, type 'undo' in the thread.", "To delete, type 'undo' in a new thread below this message.");
+            }
 
-            await app.client.chat.postMessage({
+            app.client.chat.postMessage({
                 username: BOT_NAME,
                 icon_emoji: BOT_EMOJI,
                 token: context.botToken,
                 channel: payload.channel,
-                thread_ts: payload.thread_ts || payload.ts,
-                text: `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`
+                thread_ts: isHereOrChannel ? undefined : payload.thread_ts || payload.ts,
+                text: text,
+                reply_broadcast: isHereOrChannel
             })
         }
 
@@ -279,10 +293,16 @@ const undoRealTagReply = (isSmart) => async ({ payload, context }) => {
             }
         }
         if (tsToDelete) {
-            return app.client.chat.delete({
+            app.client.chat.delete({
                 token: context.botToken,
                 channel: payload.channel,
                 ts: tsToDelete,
+                as_user: true
+            })
+            return app.client.chat.delete({
+                token: process.env.ADMIN_USER_TOKEN,
+                channel: payload.channel,
+                ts: payload.ts,
                 as_user: true
             })
         }
