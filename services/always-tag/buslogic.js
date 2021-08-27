@@ -272,7 +272,9 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
 
             if (isHereOrChannel) {
                 text = text.replace(/(tag these people|tag this person)/, `use th${isMultipleHelperTags ? "ese" : "is"} tag${isMultipleHelperTags ? "s" : ""}`);
-                text = text.replace("To delete, type 'undo' in the thread.", "To delete, type 'undo' in a new thread below this message.");
+                if (!originalMessageWasInThread) {
+                    text = text.replace("To delete, type 'undo' in the thread.", "To delete, type 'undo' in a new thread below this message.");
+                }
 
                 const wereThereAnyExplicitTags = text.includes("explicitly tagged");
 
