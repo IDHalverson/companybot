@@ -1,4 +1,4 @@
-const { get } = require("lodash");
+const { get, uniq } = require("lodash");
 const { app } = require("../../index");
 const { asyncForEach } = require("../../utils")
 const {
@@ -114,7 +114,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             else if (taggedHereOrChannel) {
                 (!tagMultipleMatchedUsersWithOneTag
                     ? returnHelperTags
-                    : returnSmartTags
+                    : [] // Smart Tags doesnt support @here and @channel (not sure it ever needs to)
                 ).push(`<!${taggedHereOrChannel}>`)
             } else {
                 const taggedMembers = [];
@@ -150,7 +150,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                     }
                 }
                 if (taggedMembers.length) {
-                    taggedMembers.forEach(tM => (
+                    // filter out the OP as well here
+                    taggedMembers.filter(tM => tM.id !== payload.user).forEach(tM => (
                         !tagMultipleMatchedUsersWithOneTag
                             ? returnHelperTags
                             : returnSmartTags
@@ -218,22 +219,84 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         if (finalReturnHelperTags.length) {
             const isMultipleHelperTags = finalReturnHelperTags.length > 1;
 
+            let finalFinalReturnHelperTags = finalReturnHelperTags;
+
             const peopleText = isMultipleHelperTags ? "these people" : "this person";
-            let text = `Looks like you tried to tag ${peopleText}. I can help: ${finalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`;
+            let text;
+            let firstSentence = `Looks like you tried to tag ${peopleText}.`;
+            let betweenHelpAndUsers = ":\n\n";
+            const createText = () => `${firstSentence} I can help${betweenHelpAndUsers} ${finalFinalReturnHelperTags.join(" ")} \n\n_(To delete, type 'undo' in the thread.)_`;
+            text = createText();
             const isHereOrChannel = text.match(/(\<!here\>|\<!channel\>)/);
+
+            const originalMessageWasInThread = payload.thread_ts;
+            let finalUsersToTag = [];
+            let finalUsersBeforeJoiningEarlierMatchesCount = 0;
+            if (isHereOrChannel && originalMessageWasInThread) {
+                const { messages } = await app.client.conversations.replies({
+                    token: context.botToken,
+                    limit: 200,
+                    ts: payload.thread_ts,
+                    channel: payload.channel,
+                });
+                finalUsersToTag = uniq(messages.filter(m => m.subtype !== "bot_message"
+                    // vvv Comment out this line temporarily for testing if needed
+                    && m.user !== payload.user
+                ).map(m => m.user));
+                const inactiveUsers = [];
+                if (!text.match(/(\<!channel\>)/)) {
+                    betweenHelpAndUsers = " by tagging online/active users in this thread:\n\n"
+                    firstSentence = "@here is not supported in threads."
+                    for (let uId of finalUsersToTag) {
+                        const { presence } = await app.client.users.getPresence({
+                            token: process.env.ADMIN_USER_TOKEN,
+                            user: uId
+                        });
+                        if (presence !== "active") inactiveUsers.push(uId)
+                    }
+                } else {
+                    betweenHelpAndUsers = " by tagging all users in this thread:\n\n"
+                    firstSentence = "@channel is not supported in threads."
+                }
+                finalFinalReturnHelperTags = finalUsersToTag.filter(uId => !inactiveUsers.includes(uId)).map(uId => `<@${uId}>`)
+                finalUsersBeforeJoiningEarlierMatchesCount = finalFinalReturnHelperTags.length;
+                // Keep anyone else who was meant to be tagged ALONGSIDE @here or @channel
+                const earlierResultsWithoutHereOrChannel = finalReturnHelperTags.filter(tg => !tg.match(/(\<!here\>|\<!channel\>)/))
+                finalFinalReturnHelperTags = uniq(
+                    [earlierResultsWithoutHereOrChannel.length ? ["active/online: "] : []].concat(finalFinalReturnHelperTags)
+                        .concat(earlierResultsWithoutHereOrChannel.length ? ["\n\nexplicitly tagged: "] : [])
+                        .concat(earlierResultsWithoutHereOrChannel))
+            }
+
+            text = createText();
+
             if (isHereOrChannel) {
                 text = text.replace(/(tag these people|tag this person)/, `use th${isMultipleHelperTags ? "ese" : "is"} tag${isMultipleHelperTags ? "s" : ""}`);
                 text = text.replace("To delete, type 'undo' in the thread.", "To delete, type 'undo' in a new thread below this message.");
+
+                const wereThereAnyExplicitTags = text.includes("explicitly tagged");
+
+                // If we got here, it means they used @here but no one was online
+                if (!wereThereAnyExplicitTags && originalMessageWasInThread && finalUsersToTag.length && !finalUsersBeforeJoiningEarlierMatchesCount) {
+                    text = "Looks like you tried to use @here, however, no one in this thread is currently online."
+                }
+
+                // If we got here, it means they used @here but there was no one besides the OP who had participated in the thread
+                if (!wereThereAnyExplicitTags && originalMessageWasInThread && !finalUsersToTag.length) {
+                    text = "Looks like you tried to use @here, however, there is no one in this thread (besides you) to tag."
+                }
+
             }
+
+            text = text.replace(/active\/online\:  \n/, "active/online: (none)\n");
 
             app.client.chat.postMessage({
                 username: BOT_NAME,
                 icon_emoji: BOT_EMOJI,
                 token: context.botToken,
                 channel: payload.channel,
-                thread_ts: isHereOrChannel ? undefined : payload.thread_ts || payload.ts,
-                text: text,
-                reply_broadcast: isHereOrChannel
+                thread_ts: isHereOrChannel && !originalMessageWasInThread ? undefined : payload.thread_ts || payload.ts,
+                text: text
             })
         }
 
@@ -287,6 +350,7 @@ const undoRealTagReply = (isSmart) => async ({ payload, context }) => {
             if (message.username === (isSmart ? DOUBLE_AT_BOT_NAME : BOT_NAME)) {
                 if (passedUndoMessageWhileTraversingBackwards) {
                     tsToDelete = message.ts;
+                    break;
                 }
             } else if (message.ts === payload.ts) {
                 passedUndoMessageWhileTraversingBackwards = true;
