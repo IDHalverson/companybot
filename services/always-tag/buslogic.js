@@ -105,7 +105,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 await loadTaggables();
             }
             const taggedGroup = usergroups.find(userGroup => userGroup.handle.toLowerCase() === rawTagPortion);
-            const taggedHereOrChannel = ["here", "channel"].find(hereOrChannel => hereOrChannel === rawTagPortion);
+            const taggedHereOrChannel = ["channel", "here"].find(hereOrChannel => hereOrChannel === rawTagPortion);
             if (taggedGroup) (
                 !tagMultipleMatchedUsersWithOneTag
                     ? returnHelperTags
@@ -151,11 +151,13 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 }
                 if (taggedMembers.length) {
                     // filter out the OP as well here
-                    taggedMembers.filter(tM => tM.id !== payload.user).forEach(tM => (
-                        !tagMultipleMatchedUsersWithOneTag
-                            ? returnHelperTags
-                            : returnSmartTags
-                    ).push(`<@${tM.id}>`));
+                    taggedMembers
+                        .filter(tM => tM.id !== payload.user)
+                        .forEach(tM => (
+                            !tagMultipleMatchedUsersWithOneTag
+                                ? returnHelperTags
+                                : returnSmartTags
+                        ).push(`<@${tM.id}>`));
                 }
             }
             return false;
@@ -224,8 +226,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             const peopleText = isMultipleHelperTags ? "these people" : "this person";
             let text;
             let firstSentence = `Looks like you tried to tag ${peopleText}.`;
-            let betweenHelpAndUsers = ":\n\n";
-            const createText = () => `${firstSentence} I can help${betweenHelpAndUsers} ${finalFinalReturnHelperTags.join(" ")} \n\n_(To delete, type 'undo' in the thread.)_`;
+            let betweenHelpAndUsers = ":";
+            const createText = () => `${firstSentence} I can help${betweenHelpAndUsers} ${finalFinalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`;
             text = createText();
             const isHereOrChannel = text.match(/(\<!here\>|\<!channel\>)/);
 
@@ -245,8 +247,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 ).map(m => m.user));
                 const inactiveUsers = [];
                 if (!text.match(/(\<!channel\>)/)) {
-                    betweenHelpAndUsers = " by tagging online/active users in this thread:\n\n"
-                    firstSentence = "@here is not supported in threads."
+                    betweenHelpAndUsers = " by tagging online/active users in this thread:"
+                    firstSentence = "@ here is not supported in threads."
                     for (let uId of finalUsersToTag) {
                         const { presence } = await app.client.users.getPresence({
                             token: process.env.ADMIN_USER_TOKEN,
@@ -255,20 +257,24 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         if (presence !== "active") inactiveUsers.push(uId)
                     }
                 } else {
-                    betweenHelpAndUsers = " by tagging all users in this thread:\n\n"
-                    firstSentence = "@channel is not supported in threads."
+                    betweenHelpAndUsers = " by tagging all users in this thread:"
+                    firstSentence = "@ channel is not supported in threads."
                 }
                 finalFinalReturnHelperTags = finalUsersToTag.filter(uId => !inactiveUsers.includes(uId)).map(uId => `<@${uId}>`)
                 finalUsersBeforeJoiningEarlierMatchesCount = finalFinalReturnHelperTags.length;
                 // Keep anyone else who was meant to be tagged ALONGSIDE @here or @channel
-                const earlierResultsWithoutHereOrChannel = finalReturnHelperTags.filter(tg => !tg.match(/(\<!here\>|\<!channel\>)/))
+                // but prevent duplicates
+                const earlierResultsWithoutHereOrChannel = finalReturnHelperTags.filter(tg => !tg.match(/(\<!here\>|\<!channel\>)/) && !finalFinalReturnHelperTags.includes(tg));
+                const hasChannel = finalReturnHelperTags.some(tg => tg.match(/(\<!channel\>)/));
                 finalFinalReturnHelperTags = uniq(
-                    [earlierResultsWithoutHereOrChannel.length ? ["active/online: "] : []].concat(finalFinalReturnHelperTags)
-                        .concat(earlierResultsWithoutHereOrChannel.length ? ["\n\nexplicitly tagged: "] : [])
-                        .concat(earlierResultsWithoutHereOrChannel))
+                    [earlierResultsWithoutHereOrChannel.length ? [hasChannel ? "" : "active/online: "] : []].concat(finalFinalReturnHelperTags)
+                        .concat(earlierResultsWithoutHereOrChannel.length ? [", explicitly tagged: "] : [])
+                        .concat(earlierResultsWithoutHereOrChannel));
             }
 
             text = createText();
+
+            let noTagsWillActuallyBeUsed = false;
 
             if (isHereOrChannel) {
                 text = text.replace(/(tag these people|tag this person)/, `use th${isMultipleHelperTags ? "ese" : "is"} tag${isMultipleHelperTags ? "s" : ""}`);
@@ -281,24 +287,55 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 // If we got here, it means they used @here but no one was online
                 if (!wereThereAnyExplicitTags && originalMessageWasInThread && finalUsersToTag.length && !finalUsersBeforeJoiningEarlierMatchesCount) {
                     text = "Looks like you tried to use @here, however, no one in this thread is currently online."
+                    noTagsWillActuallyBeUsed = true;
                 }
 
                 // If we got here, it means they used @here but there was no one besides the OP who had participated in the thread
                 if (!wereThereAnyExplicitTags && originalMessageWasInThread && !finalUsersToTag.length) {
                     text = "Looks like you tried to use @here, however, there is no one in this thread (besides you) to tag."
+                    noTagsWillActuallyBeUsed = true;
                 }
 
             }
 
-            text = text.replace(/active\/online\:  \n/, "active/online: (none)\n");
+            text = text.replace(/active\/online\:  /, "active/online: (none)");
 
             app.client.chat.postMessage({
-                username: BOT_NAME,
-                icon_emoji: BOT_EMOJI,
+                username: noTagsWillActuallyBeUsed ? BOT_NAME : `${user.real_name} (clone)`,
+                ...(noTagsWillActuallyBeUsed ? { icon_emoji: BOT_EMOJI } : { icon_url: user.profile.image_48 }),
                 token: context.botToken,
                 channel: payload.channel,
                 thread_ts: isHereOrChannel && !originalMessageWasInThread ? undefined : payload.thread_ts || payload.ts,
-                text: text
+                text: text,
+                ...({
+                    blocks: noTagsWillActuallyBeUsed ? [
+                        {
+                            type: "section",
+                            text: {
+                                type: "plain_text",
+                                text: text
+                            }
+                        }
+                    ] : [
+                        {
+                            type: "section",
+                            text: {
+                                type: "plain_text",
+                                text: payload.text
+                            }
+                        },
+                        {
+                            type: "divider"
+                        },
+                        {
+                            type: "context",
+                            elements: [{
+                                type: "mrkdwn",
+                                text: `:tag: *${BOT_NAME} says:* ${text}`
+                            }]
+                        }
+                    ]
+                })
             })
         }
 
