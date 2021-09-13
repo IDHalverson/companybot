@@ -386,7 +386,10 @@ const undoRealTagReply = (isSmart) => async ({ payload, context }) => {
         let passedUndoMessageWhileTraversingBackwards = false;
         let tsToDelete;
         for (let message of messages.reverse()) {
-            if (message.username === (isSmart ? DOUBLE_AT_BOT_NAME : BOT_NAME)) {
+            if (
+                (message.username === (isSmart ? DOUBLE_AT_BOT_NAME : BOT_NAME))
+                || (message.username && message.username.endsWith(" (clone)"))
+            ) {
                 if (passedUndoMessageWhileTraversingBackwards) {
                     tsToDelete = message.ts;
                     break;
