@@ -32,6 +32,12 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
         });
         if (user.is_bot) return;
 
+        const usedCustomTagTypes = payload.text.match(/(?<![\S])\@thread(?![\S])/) || payload.text.match(/(?<![\S])\@online-in-thread(?![\S])/);
+
+        const replaceThreadTagsWithNormalTags = (txt) => txt.replace(/(?<![\S])\@thread(?![\S])/g, "@channel").replace(/(?<![\S])\@online-in-thread(?![\S])/g, "@here")
+        let payloadText = replaceThreadTagsWithNormalTags(payload.text);
+        const contextMatches = context.matches.map(ma => replaceThreadTagsWithNormalTags(ma))
+
         let doubleAtWasAttemptedCount = 0;
         let doubleAtWasIgnoredCount = 0;
 
@@ -163,7 +169,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             return false;
         }
 
-        await asyncForEach(context.matches, async (tag) => {
+        await asyncForEach(contextMatches, async (tag) => {
             const usedDoubleAts = tag.startsWith("@@");
             if (usedDoubleAts) doubleAtWasAttemptedCount++;
             const { tagMultipleMatchedUsersWithOneTag } = FEATURE_FLAGS.usedDoubleAts[usedDoubleAts] || {};
@@ -172,8 +178,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                     ? char
                     : `\\${char}`
                 ).join("")}\\>`);
-            const tagIsActive = payload.text.includes(`<${tag}>`) ||
-                payload.text.match(userGroupRegex);
+            const tagIsActive = payloadText.includes(`<${tag}>`) ||
+                payloadText.match(userGroupRegex);
             const tagIsInvalid = tag.match(/^\@[\@]*[\?]+$/) || (tag.split(" ")[0]).match(/^\@[\@]*[\?]+$/);
             if (!tagIsActive && !tagIsInvalid) {
                 const tagRaw = tag.trim()
@@ -227,7 +233,7 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             let text;
             let firstSentence = `Looks like you tried to tag ${peopleText}.`;
             let betweenHelpAndUsers = ":";
-            const createText = () => `${firstSentence} I can help${betweenHelpAndUsers} ${finalFinalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`;
+            const createText = () => `${usedCustomTagTypes ? "" : `${firstSentence} I can help`}${betweenHelpAndUsers} ${finalFinalReturnHelperTags.join(" ")} _(To delete, type 'undo' in the thread.)_`;
             text = createText();
             const isHereOrChannel = text.match(/(\<!here\>|\<!channel\>)/);
 
@@ -247,8 +253,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                 ).map(m => m.user));
                 const inactiveUsers = [];
                 if (!text.match(/(\<!channel\>)/)) {
-                    betweenHelpAndUsers = " by tagging online/active users in this thread:"
-                    firstSentence = "@ here is not supported in threads."
+                    betweenHelpAndUsers = `${usedCustomTagTypes ? "T" : " by t"}agging online/active users in this thread:`
+                    firstSentence = "\`@ here\` is not supported in threads."
                     for (let uId of finalUsersToTag) {
                         const { presence } = await app.client.users.getPresence({
                             token: process.env.ADMIN_USER_TOKEN,
@@ -257,8 +263,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         if (presence !== "active") inactiveUsers.push(uId)
                     }
                 } else {
-                    betweenHelpAndUsers = " by tagging all users in this thread:"
-                    firstSentence = "@ channel is not supported in threads."
+                    betweenHelpAndUsers = `${usedCustomTagTypes ? "T" : " by t"}agging all users in this thread:`
+                    firstSentence = "\`@ channel\` is not supported in threads."
                 }
                 finalFinalReturnHelperTags = finalUsersToTag.filter(uId => !inactiveUsers.includes(uId)).map(uId => `<@${uId}>`)
                 finalUsersBeforeJoiningEarlierMatchesCount = finalFinalReturnHelperTags.length;
@@ -292,13 +298,17 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
 
                 // If we got here, it means they used @here but there was no one besides the OP who had participated in the thread
                 if (!wereThereAnyExplicitTags && originalMessageWasInThread && !finalUsersToTag.length) {
-                    text = "Looks like you tried to use @here, however, there is no one in this thread (besides you) to tag."
+                    const hasChannel = finalReturnHelperTags.some(tg => tg.match(/(\<!channel\>)/));
+                    text = `Looks like you tried to use @${hasChannel ? "channel" : "here"}, however, there is no one in this thread (besides you) to tag.`
                     noTagsWillActuallyBeUsed = true;
                 }
 
             }
 
             text = text.replace(/active\/online\:  /, "active/online: (none)");
+
+            payloadText = payloadText
+                .replace(/(?<![\S])\@channel(?![\S])/g, "\`@thread\`").replace(/(?<![\S])\@here(?![\S])/g, "\`@online-in-thread\`");
 
             app.client.chat.postMessage({
                 username: noTagsWillActuallyBeUsed ? BOT_NAME : `${user.real_name} (clone)`,
@@ -320,8 +330,8 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
                         {
                             type: "section",
                             text: {
-                                type: "plain_text",
-                                text: payload.text
+                                type: "mrkdwn",
+                                text: payloadText
                             }
                         },
                         {
