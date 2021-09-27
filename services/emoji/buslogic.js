@@ -68,8 +68,8 @@ const getEmoji = async (howMany, searchTerm, useFindFeature = false) => {
         )
     );
 
-    let emojisList = await fetchSlackEmojis()
-    if (!emojisList) emojisList = [];
+    const emojisResponse = await fetchSlackEmojis()
+    let emojisList = emojisResponse && emojisResponse.length ? emojisResponse : []
 
     if (!emojisList.length) return "(404 - no emojis found)";
 
@@ -78,7 +78,7 @@ const getEmoji = async (howMany, searchTerm, useFindFeature = false) => {
     }
 
     if (!emojisList.length) {
-        return `Nothing matched search term. Please accept this: ${emojisList[getRandomInt(emojisList.length)]}`
+        return `Nothing matched search term. Please accept this: :${emojisResponse[getRandomInt(emojisResponse.length)]}:`
     }
 
     let chosenEmoji;
