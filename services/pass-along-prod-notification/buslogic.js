@@ -8,7 +8,7 @@ const UTILS = require("../../utils")
 const blockMatchesPattern = (block, regExpression) => block.text && (typeof block.text === "string" && block.text.match(regExpression) ||
     typeof (block.text && block.text.text) === "string" && block.text.text.match(regExpression))
 
-const ifConfiguredPassAlongMessage = async ({ message, payload, context, }) => {
+const ifConfiguredPassAlongMessage = async ({ message, payload, context }) => {
     if (payload.channel === process.env.BOT_ERRORS_SLACK_CHANNEL) return;
     try {
 
@@ -97,11 +97,9 @@ const ifConfiguredPassAlongMessage = async ({ message, payload, context, }) => {
                 return txt;
             } else return returnTxt
         }, "");
-        UTILS.sendErrorToSlack(
-            app,
-            textForError,
-            e
-        )
+        UTILS.sendErrorToSlack({
+            app, whileProcessing: textForError, error: e, token: context.botToken
+        })
     }
 }
 
