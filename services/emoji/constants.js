@@ -22,6 +22,7 @@ const charToEmojiMap = {
     '!': ':exclamation:',
     '?': ':question:',
     '"': ':air_quotes:',
+    'o': ':o3:'
 }
 
 module.exports = {

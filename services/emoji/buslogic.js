@@ -2,9 +2,14 @@ const { get, uniq, sampleSize, shuffle } = require("lodash");
 const { app } = require("../../index");
 const CONSTANTS = require("./constants")
 
-const splitCommandAndParams = (message, config = ["command"]) => {
-    const split = (message || "").trim().split(/[\s]/);
+const splitCommandAndParams = (message, config = ["command"], expectedCommand = "!emoji") => {
+    let split = (message || "").trim().split(/[\s]/);
     const returnMap = {};
+
+    if (split[0] !== expectedCommand) {
+        split = [expectedCommand, split[0].split(expectedCommand)[1] || "", ...split.slice(1)]
+    }
+
     split.forEach((part, index) => {
         const partNormalized = part.trim().toLowerCase();
         if (config[index]) {
@@ -14,7 +19,24 @@ const splitCommandAndParams = (message, config = ["command"]) => {
             returnMap.unnamedParams.push(partNormalized)
         }
     });
+
     return returnMap
+}
+
+const replaceStringFromMap = (string, replacementsMap, reverse = false) => {
+    let stringToUse = string;
+    if (reverse) {
+        stringToUse = string.split("").reverse().join("")
+    }
+    const originalStringLength = stringToUse.length;
+    const finalString = stringToUse.replace(/./g, (char, idx) => {
+        const idxToAccessMap = reverse ? originalStringLength - (idx + 1) : idx;
+        const replacement = replacementsMap[idxToAccessMap] === undefined ? char : replacementsMap[idxToAccessMap];
+        const finalReplacement = reverse ? replacement.split("").reverse().join("") : replacement;
+        // console.log(`Replacing ${char} at index ${idx} with ${finalReplacement} from mapIndex ${idxToAccessMap}`)
+        return finalReplacement;
+    })
+    return reverse ? finalString.split("").reverse().join("") : finalString;
 }
 
 const handleMessage = async (args) => {
@@ -38,7 +60,7 @@ const handleMessage = async (args) => {
     } else if (howMany === "find") {
         response = await getEmoji(CONSTANTS.maxHowMany, searchTerm, true)
     } else {
-        response = "emoji talk coming soon"
+        response = getEmojiTalk(payload.text.substring(6))
     }
 
     if (response) reply(response)
@@ -104,6 +126,57 @@ const getEmoji = async (howMany, searchTerm, useFindFeature = false) => {
     return final ? final : "Something went wrong."
 }
 
+const getEmojiTalk = (rawText) => {
+
+    let text = rawText.trim();
+
+    // insert placeholders for emojis and tags
+    const existingEmojiOrPlaceholders = Array.from((text.match(/(:[a-zA-Z0-9_-]+:|%%)/g) || []));
+    text = text.replace(/:[a-zA-Z0-9_-]+:/g, "%%");
+    const atsOrPlaceholders = Array.from(text.match(/(?:<(?:@|#|!subteam\^)[A-Z0-9]{8,12}(?:\|[@a-z_-]+)?>|@@)/g) || []);
+    text = text.replace(/<(?:@|#|!subteam\^)[A-Z0-9]{8,12}(?:\|[@a-z_-]+)?>/g, "@@")
+
+    // Replace letters and numbers with emojis until max reached
+    let emojiCount = existingEmojiOrPlaceholders.filter(it => it !== "%%").length;
+    const replacementMap = {};
+    for (let charIndex in text) {
+        const char = text[charIndex]
+        if (emojiCount < CONSTANTS.maxEmojiTalkEmojis) {
+            const newChar = charToEmoji(char);
+            replacementMap[charIndex] = newChar;
+            if (newChar.startsWith(":")) emojiCount++
+        }
+    }
+    let response = replaceStringFromMap(text, replacementMap)
+
+    // Re-insert emojis and tags
+    const lists = [
+        [existingEmojiOrPlaceholders, /%%/g],
+        [atsOrPlaceholders, /@@/g]
+    ];
+    const replMap = {};
+    lists.forEach(([list, regex]) => {
+        let myArray;
+        while ((myArray = regex.exec(response)) !== null) {
+            const index1 = regex.lastIndex - 2;
+            const index2 = regex.lastIndex - 1;
+            replMap[index1] = list.shift();
+            replMap[index2] = "";
+        }
+    })
+    response = replaceStringFromMap(response, replMap, true)
+
+    return response
+}
+
+const charToEmoji = (char) => {
+    if (char.match(/[a-zA-Z]/)) {
+        return CONSTANTS.charToEmojiMap[char] || `:${char}2:`
+    } else {
+        return CONSTANTS.charToEmojiMap[char] || char;
+    }
+}
+
 const fetchSlackEmojis = async () => {
     const emojiResp = await app.client.emoji.list({
         token: process.env.ADMIN_USER_TOKEN
@@ -121,51 +194,3 @@ const getHelp = () => {
 }
 
 module.exports = { handleMessage }
-
-
-// -------------------
-
-// def _char_to_emoji(self, char):
-// if re.match(r'[a-zA-Z]', char):
-//     return f':{char}:'
-// elif re.match(r'[0-9\s"!?]', char):
-// return self.number_to_emoji_map[char]
-//         else:
-// return char
-
-// -------------------
-
-// def _get_emoji_talk(self, text):
-// existing_emoji = re.findall(r':[a-zA-Z0-9_-]+:', text)
-// text = re.sub(r':[a-zA-Z0-9_-]+:', '%%', text)
-// ats = re.findall(r'<@[A-Z0-9]{8,10}>', text)
-// text = re.sub(r'<@[A-Z0-9]{8,10}>', '@@', text)
-// emoji_count = len(existing_emoji)
-// response = ''
-
-// for char in text:
-//     if emoji_count < self.max_emoji_talk_emojis:
-//         char = self._char_to_emoji(char)
-
-// response += char
-
-// if char.startswith(':'):
-//     emoji_count += 1
-
-// while existing_emoji:
-//     i = response.find('%%')
-
-// if i < 0:
-//     break
-
-// response = response[: i]+ existing_emoji.pop(0) + response[i + 2:]
-
-// while ats:
-//     i = response.find('@@')
-
-// if i < 0:
-//     break
-
-// response = response[: i]+ ats.pop(0) + response[i + 2:]
-
-// return response
