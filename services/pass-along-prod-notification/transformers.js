@@ -10,7 +10,7 @@ const convertBSCPDeployNotificationToText = (message) => {
         username: "BSCP Deploy Script",
         icon_emoji: ":rocket_rising:",
         blocks: undefined,
-        text: `Burris Supply Chain Portal was deployed to Production. \nFront-End: \`${frontEndDeployed
+        text: `${process.env.BSCP_APP_NAME} was deployed to Production. \nFront-End: \`${frontEndDeployed
             }\` \nBack-End: \`${backEndDeployed}\` \nIntegration: \`${integrationDeployed}\``
     }
 }

@@ -13,7 +13,7 @@ app.message(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/, jiraUnfurlCallback);
 //     token: context.botToken,
 //     icon_emoji: ":jira:",
 //     username: "JIRA",
-//     text: "Sorry, Burris Bot's JIRA integration will be repaired soon.",
+//     text: "Sorry, Company Bot's JIRA integration will be repaired soon.",
 //     response_type: "in_channel"
 //   };
 //   axios.post(command.response_url, postParams);

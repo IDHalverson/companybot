@@ -9,7 +9,7 @@ const getEmailSolutionsForm = (
     type: "modal",
     title: {
       type: "plain_text",
-      text: "Email Burris Solutions",
+      text: process.env.EMAIL_SOLUTIONS_MODAL_TITLE,
       emoji: true
     },
     private_metadata: `${context.user_real_name}<sep?>${command.channel_name}<sep?>${context.user_email}<sep?>${context.user_id}<sep?>${command.channel_id}`,
