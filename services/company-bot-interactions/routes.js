@@ -1,31 +1,39 @@
 const { app } = require("../../index");
-const BurrisBot = require("./burris-bot");
+const CompanyBot = require("./company-bot");
 const {
-  burrisBotPostInChannel,
-  burrisBotMessageAllUsers
+  companyBotPostInChannel,
+  companyBotMessageAllUsers
 } = require("./buslogic");
 
-const burrisBot = new BurrisBot();
+const companyBot = new CompanyBot();
 
 app.message(
   // Adding 0-9 to the channel name causes entire message to get posted instead
   // of specified text... TODO: fix
-  /burrisbot\spost\sin\s\<\#([A-Za-z0-9]+)\|[a-z\-\_]+\>\s(.+)/,
-  burrisBotPostInChannel
+  new RegExp(`${companyBot.companyNameLowerCaseNoSpaces
+    }bot\\spost\\sin\\s\\<\\#([A-Za-z0-9]+)\\|[a-z\\-\\_]+\\>\\s(.+)`),
+  companyBotPostInChannel
 );
 
 // app.message(
-//   /burrisbot\smessage\s\<\@([A-Za-z0-9]+)\>\s(.+)/,
-//   burrisBotMessageUser
+//   /companybot\smessage\s\<\@([A-Za-z0-9]+)\>\s(.+)/,
+//   companyBotMessageUser
 // );
 
-app.message(/burrisbot\smessage\severyone\s?(.*)/, burrisBotMessageAllUsers);
+app.message(
+  new RegExp(`${companyBot.companyNameLowerCaseNoSpaces
+    }bot\\smessage\\severyone\\s?(.*)`),
+  companyBotMessageAllUsers
+);
 
-app.message(/(.)*burris(\-|\_)*bot(?!\:)(.)*/i, async ({ say }) => {
-  await say(burrisBot.getBurrisBotGreeting());
-});
+app.message(
+  new RegExp(`(.)*${companyBot.companyNameLowerCaseNoSpaces
+    }(\\-|\\_|\\s)*bot(?!\\:)(.)*`, "i"),
+  async ({ say }) => {
+    await say(companyBot.getCompanyBotGreeting());
+  });
 
 app.command("/say-good-morning", async ({ ack, say }) => {
   await ack();
-  say(burrisBot.getGoodMorningGreeting());
+  say(companyBot.getGoodMorningGreeting());
 });

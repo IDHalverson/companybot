@@ -62,7 +62,7 @@ const moveToThreadFormSubmissionCallback = async ({
 
     const usersForDelivery = get(payload, "state.values.deliver_to_users.deliver_to_users_value.selected_users") || [];
 
-    if (!startMessageLink || !startMessageLink.match(/^http[s]*\:\/\/burris\-logistics\.slack\.com\/archives\//)) {
+    if (!startMessageLink || !startMessageLink.match(/^http[s]*\:\/\/[a-zA-Z0-9_-]+\.slack\.com\/archives\//)) {
         return app.client.chat.postEphemeral({
             token: context.botToken,
             channel: payload.private_metadata.split("<?sep>")[1],
@@ -202,7 +202,7 @@ const moveToThreadFormSubmissionCallback = async ({
 
             if (newDateGotPosted || mostRecentUserHeading !== user) {
                 const dateWithLink = doDelete ? `_${mom.format("h:mma")}<<insertEndTime>>_` :
-                    `<https://burris-logistics.slack.com/archives/${channelId}/p${message.ts * 1000000}|_${mom.format("h:mma")}<<insertEndTime>>_>`
+                    `<https://${process.env.SLACK_CLIENT_URL}/archives/${channelId}/p${message.ts * 1000000}|_${mom.format("h:mma")}<<insertEndTime>>_>`
                 prefix += `\`${getName(message)}:\` ${dateWithLink}\n\n`
                 mostRecentUserHeading = user
             }
@@ -240,7 +240,7 @@ const moveToThreadFormSubmissionCallback = async ({
                     text: `${originalUserId === userForDelivery ?
                         "You sent yourself"
                         : `${fullNamesMapped[originalUserId]} sent you`
-                        } a Garlic Thread:\n\nhttps://burris-logistics.slack.com/archives/${channelId}/p${threadTs * 1000000}`,
+                        } a Garlic Thread:\n\nhttps://${process.env.SLACK_CLIENT_URL}/archives/${channelId}/p${threadTs * 1000000}`,
                     unfurl_links: true,
                     username: "Garlic Thread",
                     icon_emoji: ":garlic_bread:",

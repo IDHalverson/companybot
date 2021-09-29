@@ -432,7 +432,7 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     postAsOrElseAdmin(context, "postEphemeral", {
       channel: payload.channel,
       user: payload.user,
-      text: `Burris-Bot Error: \`${e.message}\`. See <https://dashboard.heroku.com/apps/burris-bot/logs|logs> for more info.`,
+      text: `Burris-Bot Error: \`${e.message}\`. ${process.env.WHERE_TO_FIND_LOGS}`,
       attachments: []
     })
   }

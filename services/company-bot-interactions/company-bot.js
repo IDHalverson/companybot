@@ -1,24 +1,20 @@
 const Utils = require("../../utils");
 
-class BurrisBot {
+class CompanyBot {
   constructor() {
-    this.burrisBotGreetings = [
-      "Make It Happen! :burris_snowflake_png:",
-      "Get It Right! :burris_snowflake_png:",
-      "I Am Burris! :burris_snowflake_png:"
-    ];
-    this.burrisBotGoodMorningGreeting =
-      "Good morning everyone! :burris_snowflake_png:";
+    this.companyBotGreetings = process.env.BOT_GREETINGS.split("<<<<,>>>>");
+    this.companyBotGoodMorningGreeting = process.env.BOT_GOODMORNING_GREETING;
+    this.companyNameLowerCaseNoSpaces = process.env.COMPANYNAME_LOWERCASE_NOSPACES;
   }
 
-  getBurrisBotGreeting() {
-    const randomIndex = Utils.getRandomInt(this.burrisBotGreetings.length);
-    return this.burrisBotGreetings[randomIndex];
+  getCompanyBotGreeting() {
+    const randomIndex = Utils.getRandomInt(this.companyBotGreetings.length);
+    return this.companyBotGreetings[randomIndex];
   }
 
   getGoodMorningGreeting() {
-    return this.burrisBotGoodMorningGreeting;
+    return this.companyBotGoodMorningGreeting;
   }
 }
 
-module.exports = BurrisBot;
+module.exports = CompanyBot;

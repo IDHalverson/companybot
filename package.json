@@ -1,18 +1,16 @@
 {
-  "name": "burris-bot",
+  "name": "company-bot",
   "version": "1.0.0",
-  "description": "Slack API for custom interactions @ Burris Logistics",
+  "description": "Slack API for custom interactions @ Your Company",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Note: no tests available\" && exit 0"
   },
   "keywords": [
-    "slack",
-    "burris",
-    "logistics"
+    "slack"
   ],
-  "author": "ihalverson@burrislogistics.com",
+  "author": "idhalverson@gmail.com",
   "license": "ISC",
   "dependencies": {
     "@slack/bolt": "^2.7.0",

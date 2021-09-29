@@ -2,7 +2,7 @@
 
 ### What is this repository for? ###
 
-* Slack API for custom interactions @ Burris Logistics
+* Slack API for custom interactions @ Your Company
 * Version 1.0.0
 
 ### How do I get set up? ###
@@ -13,9 +13,8 @@
 
 ### Contribution guidelines ###
 
-* Consult Ian Halverson (ihalverson@burrislogistics.com) for questions about contributing.
+* Consult Ian Halverson (idhalverson@gmail.com) for questions about contributing.
 
 ### Who do I talk to? ###
 
-* Repo owner & admin: Ian Halverson (ihalverson@burrislogistics.com)
-* Company: Burris Logistics
+* Repo owner & admin: Ian Halverson (idhalverson@gmail.com)
