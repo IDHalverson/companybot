@@ -128,7 +128,7 @@ const getEmoji = async (howMany, searchTerm, useFindFeature = false) => {
 
 const getEmojiTalk = (rawText) => {
 
-    let text = rawText.trim();
+    let text = rawText.trim().toLowerCase();
 
     // insert placeholders for emojis and tags
     const existingEmojiOrPlaceholders = Array.from((text.match(/(:[a-zA-Z0-9_-]+:|%%)/g) || []));
