@@ -95,7 +95,7 @@ const replyCreator = ({ context, payload, command: slashCommand }) => async (rep
                 axios.post(slashCommand.response_url, {
                     ...commonParams,
                     ...contentParams,
-                    response_type: "kdsjin_channel"
+                    response_type: "in_channel"
                 });
             } catch (e) {
                 errorToReport = e;
