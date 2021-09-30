@@ -42,13 +42,15 @@ const replaceStringFromMap = (string, replacementsMap, reverse = false) => {
 const handleMessage = async (args) => {
     args.ack && args.ack();
     const reply = replyCreator(args)
-    const { payload, context } = args;
+    const { payload, context, command: slashCommand } = args;
+
+    const payloadText = `${slashCommand ? "!emoji" : ""}${payload.text}`;
 
     const {
         command,
         howMany,
         searchTerm
-    } = splitCommandAndParams(payload.text, ["command", "howMany", "searchTerm"]);
+    } = splitCommandAndParams(payloadText, ["command", "howMany", "searchTerm"]);
 
     let response;
     if (!howMany) {
@@ -60,7 +62,7 @@ const handleMessage = async (args) => {
     } else if (howMany === "find") {
         response = await getEmoji(CONSTANTS.maxHowMany, searchTerm, true)
     } else {
-        response = getEmojiTalk(payload.text.substring(6))
+        response = getEmojiTalk(payloadText.substring(6))
     }
 
     if (response) reply(response)
@@ -71,7 +73,7 @@ const replyCreator = ({ context, payload }) => async (replyText) => {
         username: "Emoji Bot",
         icon_emoji: ":emojis:",
         token: context.botToken,
-        channel: payload.channel,
+        channel: payload.channel || payload.channel_id,
         thread_ts: payload.thread_ts || undefined,
         text: replyText
     })
@@ -128,7 +130,7 @@ const getEmoji = async (howMany, searchTerm, useFindFeature = false) => {
 
 const getEmojiTalk = (rawText) => {
 
-    let text = rawText.trim().toLowerCase();
+    let text = rawText.trim();
 
     // insert placeholders for emojis and tags
     const existingEmojiOrPlaceholders = Array.from((text.match(/(:[a-zA-Z0-9_-]+:|%%)/g) || []));
@@ -170,10 +172,11 @@ const getEmojiTalk = (rawText) => {
 }
 
 const charToEmoji = (char) => {
+    const charLowerCased = char.toLowerCase();
     if (char.match(/[a-zA-Z]/)) {
-        return CONSTANTS.charToEmojiMap[char] || `:${char}2:`
+        return CONSTANTS.charToEmojiMap[charLowerCased] || `:${charLowerCased}2:`
     } else {
-        return CONSTANTS.charToEmojiMap[char] || char;
+        return CONSTANTS.charToEmojiMap[charLowerCased] || char;
     }
 }
 
