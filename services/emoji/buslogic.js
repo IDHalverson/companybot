@@ -1,6 +1,7 @@
 const { get, uniq, sampleSize, shuffle } = require("lodash");
 const { app } = require("../../index");
 const CONSTANTS = require("./constants")
+const axios = require("axios");
 
 const splitCommandAndParams = (message, config = ["command"], expectedCommand = "!emoji") => {
     let split = (message || "").trim().split(/[\s]/);
@@ -41,6 +42,7 @@ const replaceStringFromMap = (string, replacementsMap, reverse = false) => {
 
 const handleMessage = async (args) => {
     args.ack && args.ack();
+    console.log(`Handling !emoji message: ${args.payload.text}`)
     const reply = replyCreator(args)
     const { payload, context, command: slashCommand } = args;
 
@@ -68,15 +70,47 @@ const handleMessage = async (args) => {
     if (response) reply(response)
 }
 
-const replyCreator = ({ context, payload }) => async (replyText) => {
-    await app.client.chat.postMessage({
+const replyCreator = ({ context, payload, command: slashCommand }) => async (replyText) => {
+    const commonParams = {
         username: "Emoji Bot",
         icon_emoji: ":emojis:",
-        token: context.botToken,
-        channel: payload.channel || payload.channel_id,
-        thread_ts: payload.thread_ts || undefined,
+    }
+    const contentParams = {
         text: replyText
-    })
+    }
+    try {
+        await app.client.chat.postMessage({
+            ...commonParams,
+            ...contentParams,
+            token: context.botToken,
+            channel: payload.channel || payload.channel_id,
+            thread_ts: payload.thread_ts || undefined,
+        })
+    } catch (e) {
+        let errorToReport;
+        const wasChannelNotFound = get(e, "data.error") === "channel_not_found";
+        if (wasChannelNotFound) {
+            console.log("Failed to post !emoji in channel, trying with command.response_url instead.")
+            try {
+                axios.post(slashCommand.response_url, {
+                    ...commonParams,
+                    ...contentParams,
+                    response_type: "kdsjin_channel"
+                });
+            } catch (e) {
+                errorToReport = e;
+            }
+        } else {
+            errorToReport = e;
+        }
+        if (errorToReport) {
+            console.error(errorToReport)
+            axios.post(slashCommand.response_url, {
+                ...commonParams,
+                text: `:warning: !Emoji Error: \`${errorToReport.message}\``
+            });
+        }
+    }
 }
 
 const getRandomInt = (max) => {
