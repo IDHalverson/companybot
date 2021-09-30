@@ -15,4 +15,10 @@ const convertBSCPDeployNotificationToText = (message) => {
     }
 }
 
+// const aTransformerTemplate = async (message, allTextFound, axios) => {
+//     const aLink = (allTextFound.match(new RegExp(process.env.LINK_REGEX)) || [])[0]
+//     const response = await axios.get(aLink);
+//     return {};
+// }
+
 module.exports = { convertBSCPDeployNotificationToText }

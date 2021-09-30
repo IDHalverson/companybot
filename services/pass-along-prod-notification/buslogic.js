@@ -4,9 +4,18 @@ const Transformers = require("./transformers")
 const CONSTANTS = require("./constants")
 const { asyncForEach } = require("../../utils")
 const UTILS = require("../../utils")
+const axios = require("axios")
 
-const blockMatchesPattern = (block, regExpression) => block.text && (typeof block.text === "string" && block.text.match(regExpression) ||
-    typeof (block.text && block.text.text) === "string" && block.text.text.match(regExpression))
+const blockMatchesPattern = (block, regExpression, allTextFoundObj) => {
+    if (block.text && typeof block.text === "string") {
+        allTextFoundObj.allTextFound = allTextFoundObj.allTextFound + block.text;
+        return block.text.match(regExpression)
+    }
+    if (block.text && block.text.text && typeof block.text.text === "string") {
+        allTextFoundObj.allTextFound = allTextFoundObj.allTextFound + block.text.text;
+        return block.text.text.match(regExpression)
+    }
+}
 
 const ifConfiguredPassAlongMessage = async ({ message, payload, context }) => {
     if (payload.channel === process.env.BOT_ERRORS_SLACK_CHANNEL) return;
@@ -39,17 +48,20 @@ const ifConfiguredPassAlongMessage = async ({ message, payload, context }) => {
                 const matchesUser = !senderId || (message.user === senderId);
                 const matchesBot = !senderId || ((message.bot_profile && message.bot_profile.app_id === senderId) || (message.bot_id && message.bot_id === senderId));
                 if (matchesUser || matchesBot) {
+                    const allTextFoundObj = {
+                        allTextFound: ((message.text || "") + (get(message, "attachments[0].title") || "") + (get(message, "attachments[0].fallback") || ""))
+                    };
                     const regExpression = new RegExp(searchFor);
                     const matchFoundInText = (message.text || "").match(regExpression);
                     const matchFoundInAttachments = (message.attachments && (message.attachments[0]
-                        && ((message.attachments[0].blocks && message.attachments[0].blocks.some(block => blockMatchesPattern(block, regExpression)))
+                        && ((message.attachments[0].blocks && message.attachments[0].blocks.some(block => blockMatchesPattern(block, regExpression, allTextFoundObj)))
                             || (message.attachments[0].title && message.attachments[0].title.match(regExpression))
                             || (message.attachments[0].fallback && message.attachments[0].fallback.match(regExpression)))
                     ));
-                    const matchFoundInBlocks = message.blocks && message.blocks.some(block => blockMatchesPattern(block, regExpression));
+                    const matchFoundInBlocks = message.blocks && message.blocks.some(block => blockMatchesPattern(block, regExpression, allTextFoundObj));
                     if (matchFoundInText || matchFoundInAttachments || matchFoundInBlocks) {
                         const customTransform = Transformers[transformerName]
-                        const { username, icon_emoji, text, blocks, attachments } = (customTransform && customTransform(message)) || {};
+                        const { username, icon_emoji, text, blocks, attachments } = (customTransform && await customTransform(message, allTextFoundObj.allTextFound, axios)) || {};
                         let finalContent = {
                             text: text,
                             blocks: blocks,
@@ -66,7 +78,7 @@ const ifConfiguredPassAlongMessage = async ({ message, payload, context }) => {
                         if (!icon_emoji || !username) {
                             const userResp = await app.client.users.info({
                                 token: process.env.ADMIN_USER_TOKEN,
-                                user: senderConfigs.lookupId || senderId
+                                user: senderConfigs.lookupId || senderId || payload.user
                             });
                             user = userResp.user;
                         }
