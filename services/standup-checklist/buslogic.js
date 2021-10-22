@@ -101,13 +101,23 @@ const someoneHasGoneCallback = (overrideMatchText) => async ({ payload, context,
     const actionText = overrideMatchText || get(context, "matches[0]");
     // EARLY RETURN
     if (isUsageMessage(context)) return;
-    const messages = await app.client.conversations.history({
-      token: context.botToken,
-      channel: payload.channel,
-      inclusive: true,
-      limit: 1,
-      latest: payload.thread_ts
-    });
+    let messages;
+    try {
+      messages = await app.client.conversations.history({
+        token: context.botToken,
+        channel: payload.channel,
+        inclusive: true,
+        limit: 1,
+        latest: payload.thread_ts
+      });
+    } catch (e) {
+      if (e.message?.includes("not_in_channel")) {
+        // If bot isn't even in channel, just end the process here
+        return;
+      } else {
+        throw e;
+      }
+    }
     const messageText = get(messages, "messages[0].text");
     const messageUsername = get(messages, "messages[0].username");
     if (
