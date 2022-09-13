@@ -37,3 +37,17 @@ app.command("/say-good-morning", async ({ ack, say }) => {
   await ack();
   say(companyBot.getGoodMorningGreeting());
 });
+
+app.message(
+  /moin/i,
+  async ({ say }) => {
+    await say("Please do not moin.");
+  }
+);
+
+// app.message(
+//   /your face is/i,
+//   async ({ say }) => {
+//     await say("Your face is a monstrous regiment of women");
+//   }
+// );

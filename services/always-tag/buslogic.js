@@ -310,43 +310,60 @@ const replyToTagSyntaxWithRealTag = async ({ payload, context }) => {
             payloadText = payloadText
                 .replace(/(?<![\S])\@channel(?![\S])/g, "\`@thread\`").replace(/(?<![\S])\@here(?![\S])/g, "\`@online-in-thread\`");
 
-            app.client.chat.postMessage({
-                username: noTagsWillActuallyBeUsed ? BOT_NAME : `${user.real_name} (clone)`,
-                ...(noTagsWillActuallyBeUsed ? { icon_emoji: BOT_EMOJI } : { icon_url: user.profile.image_48 }),
+            /* BUG: If user can't do @here/@channel, app crashes */
+
+            if (
+              !(payload.text || "").includes("@here") &&
+              !(payload.text || "").includes("@channel")
+            )
+              app.client.chat.postMessage({
+                username: noTagsWillActuallyBeUsed
+                  ? BOT_NAME
+                  : `${user.real_name} (clone)`,
+                ...(noTagsWillActuallyBeUsed
+                  ? { icon_emoji: BOT_EMOJI }
+                  : { icon_url: user.profile.image_48 }),
                 token: context.botToken,
                 channel: payload.channel,
-                thread_ts: isHereOrChannel && !originalMessageWasInThread ? undefined : payload.thread_ts || payload.ts,
+                thread_ts:
+                  isHereOrChannel && !originalMessageWasInThread
+                    ? undefined
+                    : payload.thread_ts || payload.ts,
                 text: text,
-                ...({
-                    blocks: noTagsWillActuallyBeUsed ? [
+                ...{
+                  blocks: noTagsWillActuallyBeUsed
+                    ? [
                         {
-                            type: "section",
-                            text: {
-                                type: "plain_text",
-                                text: text
-                            }
-                        }
-                    ] : [
+                          type: "section",
+                          text: {
+                            type: "plain_text",
+                            text: text,
+                          },
+                        },
+                      ]
+                    : [
                         {
-                            type: "section",
-                            text: {
-                                type: "mrkdwn",
-                                text: payloadText
-                            }
+                          type: "section",
+                          text: {
+                            type: "mrkdwn",
+                            text: payloadText,
+                          },
                         },
                         {
-                            type: "divider"
+                          type: "divider",
                         },
                         {
-                            type: "context",
-                            elements: [{
-                                type: "mrkdwn",
-                                text: `:tag: *${BOT_NAME} says:* ${text}`
-                            }]
-                        }
-                    ]
-                })
-            })
+                          type: "context",
+                          elements: [
+                            {
+                              type: "mrkdwn",
+                              text: `:tag: *${BOT_NAME} says:* ${text}`,
+                            },
+                          ],
+                        },
+                      ],
+                },
+              });
         }
 
         if (finalReturnSmartTags.length) {
