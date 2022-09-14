@@ -25,3 +25,4 @@ require("./services/move-to-thread/routes.js");
 require("./services/emoji/routes.js");
 require("./services/wordle/routes.js");
 require("./services/your-face/routes.js");
+require("./services/confessions/routes.js");
