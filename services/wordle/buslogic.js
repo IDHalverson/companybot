@@ -279,8 +279,6 @@ ${Object.entries(userScoreTotals).map(
   ([username, score], ix) => `\n\`${score}\`  ${username}`
 )}`);
 
-  // console.log(scoreboardFinalText);
-
   await app.client.chat.postMessage({
     token: context.botToken,
     channel: payload.channel,

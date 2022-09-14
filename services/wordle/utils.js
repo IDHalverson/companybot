@@ -1,5 +1,4 @@
 const sortScoreboard = (scoreboard) => {
-  console.log(scoreboard);
   const lines = scoreboard.match(/\n\`[^\n]+/g);
   lines.sort().reverse();
 
