@@ -1,6 +1,7 @@
 const { get, uniq, result } = require("lodash");
 const { app } = require("../../index");
 const {} = require("./constants");
+const { sortScoreboard } = require("./utils");
 
 /**
  * Ordinary flow for a Wordle posted is not recursive.
@@ -45,6 +46,9 @@ const handleWordlePosted = async ({
     cursor = results.response_metadata.next_cursor;
   }
 
+  /**
+   * REPLAY LOGIC
+   */
   if (isReplay && !isReplayRoutineForOneMessage) {
     let accumulatedScoreboard;
     const usersDoneAlready = [];
@@ -72,51 +76,7 @@ const handleWordlePosted = async ({
         usersDoneAlready.push(result.user);
       }
     }
-    const lines = accumulatedScoreboard.match(/\n\`[^\n]+/g);
-    lines.sort().reverse();
-
-    const firstPlaceIndexes = lines
-      .map((line, index) =>
-        Number(line.match(/\`([0-9]+)\`/)[1]) ===
-        Number(lines[0].match(/\`([0-9]+)\`/)[1])
-          ? index
-          : null
-      )
-      .filter((it) => it != null);
-    const secondPlaceIndexes = lines
-      .map((line, index) =>
-        Number(line.match(/\`([0-9]+)\`/)[1]) ===
-        Number(
-          lines[firstPlaceIndexes.slice(-1)[0] + 1]?.match(/\`([0-9]+)\`/)[1]
-        )
-          ? index
-          : null
-      )
-      .filter((it) => it != null);
-    const thirdPlaceIndexes = lines
-      .map((line, index) =>
-        Number(line.match(/\`([0-9]+)\`/)[1]) ===
-        Number(
-          lines[secondPlaceIndexes.slice(-1)[0] + 1]?.match(/\`([0-9]+)\`/)[1]
-        )
-          ? index
-          : null
-      )
-      .filter((it) => it != null);
-
-    firstPlaceIndexes.forEach((idx) => {
-      lines[idx] += " :first_place_medal:";
-    });
-    secondPlaceIndexes.forEach((idx) => {
-      lines[idx] += " :second_place_medal:";
-    });
-    thirdPlaceIndexes.forEach((idx) => {
-      lines[idx] += " :third_place_medal:";
-    });
-
-    const finalScoreboard = `${
-      accumulatedScoreboard.split("\n\n")[0]
-    }\n\n${lines.join("")}`;
+    const finalScoreboard = sortScoreboard(accumulatedScoreboard);
 
     app.client.chat.postMessage({
       token: context.botToken,
@@ -125,6 +85,9 @@ const handleWordlePosted = async ({
       icon_emoji: ":word:",
       text: finalScoreboard,
     });
+    /**
+     * END REPLAY LOGIC
+     */
   } else {
     const wordleNumberPosted =
       context.matches[0].match(/Wordle ([0-9]+) /)?.[1];
@@ -147,10 +110,15 @@ const handleWordlePosted = async ({
     const usernameToShow =
       userInfo.user.profile.display_name || userInfo.user.profile.real_name;
     if (existingScoreBoard) {
-      scoreBoardText = `${existingScoreBoard.text}\n\`${score}\`  ${usernameToShow}`;
+      scoreBoardText = `${existingScoreBoard.text.replace(
+        / :(first|second|third)_place_medal:/g,
+        ""
+      )}\n\`${score}\`  ${usernameToShow}`;
     } else {
       scoreBoardText = `*Scoreboard: Wordle ${wordleNumberPosted}*\n\n\`${score}\`  ${usernameToShow}`;
     }
+
+    scoreBoardText = sortScoreboard(scoreBoardText);
 
     if (isReplayRoutineForOneMessage) {
       return Promise.resolve({
@@ -255,12 +223,12 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
       }
     }
     if (!excludeThis && scoreboard) {
-      const usersAndScores = scoreboard.text.match(/\n\`[0-7]\`  [^\n]+/g);
+      const usersAndScores = scoreboard.text.match(/\n\`[0-7]\`  [^\n:]+/g);
       const usersAndScoresMap = {};
       if (usersAndScores)
         usersAndScores.forEach((match) => {
           const score = match.match(/\n\`([0-7])\`/)[1];
-          const username = match.match(/\n\`[0-7]\`  ([^\n]+)/)[1];
+          const username = match.match(/\n\`[0-7]\`  ([^\n:]+)/)[1];
           usersAndScoresMap[username] = score;
         });
       scoreboardsMap[wordle] = usersAndScoresMap;
@@ -304,46 +272,12 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
       return total + score;
     }, 0);
   });
-  const sortedScores = Object.entries(userScoreTotals).sort(
-    ([_, scoreA], [__, scoreB]) => {
-      return scoreB - scoreA;
-    }
-  );
 
-  const firstPlaceIndexes = sortedScores
-    .map(([_, score], index) => (score === sortedScores[0][1] ? index : null))
-    .filter((it) => it != null);
+  const scoreboardFinalText = sortScoreboard(`*2 Week Wordle Scoreboard*
 
-  const secondPlaceIndexes = sortedScores
-    .map(([_, score], index) =>
-      score === sortedScores[firstPlaceIndexes.slice(-1)[0] + 1]?.[1]
-        ? index
-        : null
-    )
-    .filter((it) => it != null);
-
-  const thirdPlaceIndexes = sortedScores
-    .map(([_, score], index) =>
-      score === sortedScores[secondPlaceIndexes.slice(-1)[0] + 1]?.[1]
-        ? index
-        : null
-    )
-    .filter((it) => it != null);
-
-  const scoreboardFinalText = `*2 Week Wordle Scoreboard*
-
-${sortedScores.map(
-  ([username, score], ix) =>
-    `\n\`${score}\`  ${username} ${
-      firstPlaceIndexes.includes(ix)
-        ? ":first_place_medal:"
-        : secondPlaceIndexes.includes(ix)
-        ? ":second_place_medal:"
-        : thirdPlaceIndexes.includes(ix)
-        ? ":third_place_medal:"
-        : ""
-    }`
-)}`;
+${Object.entries(userScoreTotals).map(
+  ([username, score], ix) => `\n\`${score}\`  ${username}`
+)}`);
 
   // console.log(scoreboardFinalText);
 
