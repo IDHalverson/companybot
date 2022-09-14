@@ -273,8 +273,6 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
     }, 0);
   });
 
-  console.log(userScoreTotals);
-
   const scoreboardFinalText = sortScoreboard(`*2 Week Wordle Scoreboard*
 
 ${Object.entries(userScoreTotals)
