@@ -1,6 +1,10 @@
 const sortScoreboard = (scoreboard) => {
   const lines = scoreboard.match(/\n\`[^\n]+/g);
-  lines.sort().reverse();
+  lines.sort((a, b) => {
+    return (
+      Number(b.match(/\`([0-9]+)\`/)[1]) - Number(a.match(/\`([0-9]+)\`/)[1])
+    );
+  });
 
   const firstPlaceIndexes = lines
     .map((line, index) =>
@@ -41,7 +45,12 @@ const sortScoreboard = (scoreboard) => {
     lines[idx] += " :third_place_medal:";
   });
 
-  const finalScoreboard = `${scoreboard.split("\n\n")[0]}\n\n${lines.join("")}`;
+  let finalScoreboard = `${scoreboard.split("\n\n")[0]}\n\n${lines.join("")}`;
+
+  finalScoreboard = finalScoreboard.replace(
+    /_place_medal: :(first|second|third)_place_medal:/g,
+    "_place_medal:"
+  );
   return finalScoreboard;
 };
 

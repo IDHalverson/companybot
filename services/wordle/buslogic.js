@@ -228,7 +228,7 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
       if (usersAndScores)
         usersAndScores.forEach((match) => {
           const score = match.match(/\n\`([0-7])\`/)[1];
-          const username = match.match(/\n\`[0-7]\`  ([^\n:]+)/)[1];
+          const username = match.match(/\n\`[0-7]\`  ([^\n:]+)/)[1]?.trim();
           usersAndScoresMap[username] = score;
         });
       scoreboardsMap[wordle] = usersAndScoresMap;
@@ -273,11 +273,13 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
     }, 0);
   });
 
+  console.log(userScoreTotals);
+
   const scoreboardFinalText = sortScoreboard(`*2 Week Wordle Scoreboard*
 
-${Object.entries(userScoreTotals).map(
-  ([username, score], ix) => `\n\`${score}\`  ${username}`
-)}`);
+${Object.entries(userScoreTotals)
+  .map(([username, score], ix) => `\n\`${score}\`  ${username}`)
+  .join("")}`);
 
   await app.client.chat.postMessage({
     token: context.botToken,
