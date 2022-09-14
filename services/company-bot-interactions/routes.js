@@ -2,7 +2,8 @@ const { app } = require("../../index");
 const CompanyBot = require("./company-bot");
 const {
   companyBotPostInChannel,
-  companyBotMessageAllUsers
+  companyBotMessageAllUsers,
+  addEmoji,
 } = require("./buslogic");
 
 const companyBot = new CompanyBot();
@@ -38,12 +39,7 @@ app.command("/say-good-morning", async ({ ack, say }) => {
   say(companyBot.getGoodMorningGreeting());
 });
 
-app.message(
-  /moin/i,
-  async ({ say }) => {
-    await say("Please do not moin.");
-  }
-);
+app.message(/moin/i, addEmoji('stop2'));
 
 // app.message(
 //   /your face is/i,
@@ -51,3 +47,8 @@ app.message(
 //     await say("Your face is a monstrous regiment of women");
 //   }
 // );
+
+app.message(
+  /knox/i,
+  addEmoji('wave')
+)

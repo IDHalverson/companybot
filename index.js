@@ -23,3 +23,4 @@ require("./services/always-tag/routes.js");
 require("./services/pass-along-prod-notification/routes.js");
 require("./services/move-to-thread/routes.js")
 require("./services/emoji/routes.js")
+require("./services/wordle/routes.js")

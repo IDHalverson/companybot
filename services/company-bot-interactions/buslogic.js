@@ -66,4 +66,17 @@ const companyBotMessageAllUsers = async ({ payload, context }) => {
   }
 };
 
-module.exports = { companyBotPostInChannel, companyBotMessageAllUsers };
+const addEmoji = (emojiName) => async ({ payload, context }) => {
+    app.client.reactions.add({
+      token: context.botToken,
+      channel: payload.channel,
+      name: emojiName,
+      timestamp: payload.ts,
+    });
+}
+
+module.exports = {
+  companyBotPostInChannel,
+  companyBotMessageAllUsers,
+  addEmoji,
+};
