@@ -86,13 +86,13 @@ const handleTrafficMonitor = async ({ payload, context }) => {
         text: `TRAFFIC CHECK @${now} for ${payload.channel}`,
       });
     } else {
-      console.log(
-        `Traffic Monitor: Not checking traffic because it has only been ${(
-          Math.round((now - lastTCTime) / 1000, 2) / 60
-        ).toFixed(2)} minutes since last check of ${
-          payload.channel
-        } (Required: ${INTERVAL_IN_MS / 1000 / 60} minutes).`
-      );
+      // console.log(
+      //   `Traffic Monitor: Not checking traffic because it has only been ${(
+      //     Math.round((now - lastTCTime) / 1000, 2) / 60
+      //   ).toFixed(2)} minutes since last check of ${
+      //     payload.channel
+      //   } (Required: ${INTERVAL_IN_MS / 1000 / 60} minutes).`
+      // );
     }
   }
 };
