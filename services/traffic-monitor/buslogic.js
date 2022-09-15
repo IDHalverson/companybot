@@ -6,6 +6,7 @@ const {
   TRAFFIC_CHECKS_CHANNEL,
   TRIGGER,
   ACTIVE_CONVOS_CHANNEL,
+  RENOTIFY_WAIT,
 } = require("./constants");
 
 const handleTrafficMonitor = async ({ payload, context }) => {
@@ -68,6 +69,19 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           });
 
         if (!alreadyPosted) {
+          const participantIds = uniq(
+            recentConversationsInChannel.messages.map((m) => m.user)
+          );
+
+          const userInfos = await Promise.all(
+            participantIds.map((p) =>
+              app.client.users.info({
+                token: context.botToken,
+                user: p,
+              })
+            )
+          );
+
           await app.client.chat.postMessage({
             token: context.botToken,
             channel: ACTIVE_CONVOS_CHANNEL,
@@ -75,7 +89,11 @@ const handleTrafficMonitor = async ({ payload, context }) => {
               recentConversationsInChannel.messages.length
             } messages in the last ${Math.round(
               TRIGGER.timespanInMS / 1000 / 60
-            )} minutes.`,
+            )} minutes. Participants: ${userInfos
+              .map(
+                (u) => `\`${u.user.profile.display_name || u.user.real_name}\``
+              )
+              .join(", ")}`,
           });
         }
       }
