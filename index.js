@@ -26,3 +26,4 @@ require("./services/emoji/routes.js");
 require("./services/wordle/routes.js");
 require("./services/your-face/routes.js");
 require("./services/confessions/routes.js");
+require("./services/traffic-monitor/routes.js");
