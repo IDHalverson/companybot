@@ -52,33 +52,32 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           oldest: (now - TRIGGER.timespanInMS) / 1000,
         });
       if (recentConversationsInChannel.messages.length >= TRIGGER.quantity) {
-        // Check if we already notified that it's active within last INTERVAL_IN_MS ms
-        // TODO: remove? Not necessary because we only check once every 10 minutes, right?
-        // const recentConversationsInActiveConvosChannel =
-        //   await app.client.conversations.history({
-        //     token: context.botToken,
-        //     channel: ACTIVE_CONVOS_CHANNEL,
-        //     limit: 100,
-        //     oldest: (now - INTERVAL_IN_MS) / 1000,
-        //   });
-        // const alreadyPosted =
-        //   recentConversationsInActiveConvosChannel.messages.find((message) => {
-        //     return message.text.startsWith(
-        //       `Active conversation in <#${payload.channel}>`
-        //     );
-        //   });
+        // Check if we already notified that it's active within last RENOTIFY_WAIT ms
+        const recentConversationsInActiveConvosChannel =
+          await app.client.conversations.history({
+            token: context.botToken,
+            channel: ACTIVE_CONVOS_CHANNEL,
+            limit: 100,
+            oldest: (now - RENOTIFY_WAIT) / 1000,
+          });
+        const alreadyPosted =
+          recentConversationsInActiveConvosChannel.messages.find((message) => {
+            return message.text.startsWith(
+              `Active conversation in <#${payload.channel}>`
+            );
+          });
 
-        // if (!alreadyPosted) {
-        await app.client.chat.postMessage({
-          token: context.botToken,
-          channel: ACTIVE_CONVOS_CHANNEL,
-          text: `Active conversation in <#${payload.channel}>\n\n${
-            recentConversationsInChannel.messages.length
-          } messages in the last ${Math.round(
-            TRIGGER.timespanInMS / 1000 / 60
-          )} minutes.`,
-        });
-        // }
+        if (!alreadyPosted) {
+          await app.client.chat.postMessage({
+            token: context.botToken,
+            channel: ACTIVE_CONVOS_CHANNEL,
+            text: `Active conversation in <#${payload.channel}>\n\n${
+              recentConversationsInChannel.messages.length
+            } messages in the last ${Math.round(
+              TRIGGER.timespanInMS / 1000 / 60
+            )} minutes.`,
+          });
+        }
       }
       await app.client.chat.postMessage({
         token: context.botToken,
