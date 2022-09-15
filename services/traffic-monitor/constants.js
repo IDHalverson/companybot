@@ -6,5 +6,6 @@ module.exports = {
     quantity: 12, // 12 messages
   },
   ACTIVE_CONVOS_CHANNEL: "C042JP62B9Q",
-  RENOTIFY_WAIT: 1000 * 60 * 60 * 2, // 2 hours
+  RENOTIFY_WAIT_IN_MS: 1000 * 60 * 60 * 2, // 2 hours
+  // TODO: RENOTIFY_BYPASS_IF_BREAK_IN_SECONDS: 60 * 30 // 30 minutes
 };

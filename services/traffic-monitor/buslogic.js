@@ -6,7 +6,7 @@ const {
   TRAFFIC_CHECKS_CHANNEL,
   TRIGGER,
   ACTIVE_CONVOS_CHANNEL,
-  RENOTIFY_WAIT,
+  RENOTIFY_WAIT_IN_MS,
 } = require("./constants");
 
 const handleTrafficMonitor = async ({ payload, context }) => {
@@ -53,13 +53,13 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           oldest: (now - TRIGGER.timespanInMS) / 1000,
         });
       if (recentConversationsInChannel.messages.length >= TRIGGER.quantity) {
-        // Check if we already notified that it's active within last RENOTIFY_WAIT ms
+        // Check if we already notified that it's active within last RENOTIFY_WAIT_IN_MS ms
         const recentConversationsInActiveConvosChannel =
           await app.client.conversations.history({
             token: context.botToken,
             channel: ACTIVE_CONVOS_CHANNEL,
             limit: 100,
-            oldest: (now - RENOTIFY_WAIT) / 1000,
+            oldest: (now - RENOTIFY_WAIT_IN_MS) / 1000,
           });
         const alreadyPosted =
           recentConversationsInActiveConvosChannel.messages.find((message) => {
