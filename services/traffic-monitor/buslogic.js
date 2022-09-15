@@ -7,12 +7,15 @@ const {
   TRIGGER,
   ACTIVE_CONVOS_CHANNEL,
   RENOTIFY_WAIT_IN_MS,
+  BOT_TESTING_CHANNEL,
 } = require("./constants");
+
+const TEST_MODE = false;
 
 const handleTrafficMonitor = async ({ payload, context }) => {
   // Only public channels
   // TODO: remove testing 'true'
-  if (payload.channel_type === "channel") {
+  if (TEST_MODE || payload.channel_type === "channel") {
     const now = Date.now();
 
     const recentMessages = await app.client.conversations.history({
@@ -44,15 +47,31 @@ const handleTrafficMonitor = async ({ payload, context }) => {
       ? now
       : Number(mostRecentTrafficCheck.text.match(/@([0-9]+) for /)[1]);
 
-    if (!mostRecentTrafficCheck || now - lastTCTime > INTERVAL_IN_MS) {
+    if (
+      TEST_MODE ||
+      !mostRecentTrafficCheck ||
+      now - lastTCTime > INTERVAL_IN_MS
+    ) {
       const recentConversationsInChannel =
         await app.client.conversations.history({
           token: context.botToken,
           channel: payload.channel,
-          limit: TRIGGER.quantity + 1,
+          limit: 200,
           oldest: (now - TRIGGER.timespanInMS) / 1000,
         });
-      if (recentConversationsInChannel.messages.length >= TRIGGER.quantity) {
+
+      const allTimestamps = recentConversationsInChannel.messages.map((m) =>
+        Number(m.ts)
+      );
+      const actualTimeScopeInSeconds =
+        Math.max(...allTimestamps) - Math.min(...allTimestamps);
+      const timespanInMinutes = actualTimeScopeInSeconds / 60;
+      const messagesPerMinuteRate =
+        recentConversationsInChannel.messages.length / timespanInMinutes;
+      if (
+        TRIGGER.minimumActualTimespanInSeconds <= actualTimeScopeInSeconds &&
+        messagesPerMinuteRate >= TRIGGER.messagesPerMinuteRate
+      ) {
         // Check if we already notified that it's active within last RENOTIFY_WAIT_IN_MS ms
         const recentConversationsInActiveConvosChannel =
           await app.client.conversations.history({
@@ -68,7 +87,7 @@ const handleTrafficMonitor = async ({ payload, context }) => {
             );
           });
 
-        if (!alreadyPosted) {
+        if (TEST_MODE || !alreadyPosted) {
           const participantIds = uniq(
             recentConversationsInChannel.messages.map((m) => m.user)
           );
@@ -84,11 +103,11 @@ const handleTrafficMonitor = async ({ payload, context }) => {
 
           await app.client.chat.postMessage({
             token: context.botToken,
-            channel: ACTIVE_CONVOS_CHANNEL,
-            text: `Active conversation in <#${payload.channel}>\n\n${
+            channel: TEST_MODE ? BOT_TESTING_CHANNEL : ACTIVE_CONVOS_CHANNEL,
+            text: `Active conversation detected in <#${payload.channel}>\n\n${
               recentConversationsInChannel.messages.length
-            } messages in the last ${Math.round(
-              TRIGGER.timespanInMS / 1000 / 60
+            } messages in the span of ~${Math.round(
+              actualTimeScopeInSeconds / 60
             )} minutes. Participants: ${userInfos
               .map(
                 (u) => `\`${u.user.profile.display_name || u.user.real_name}\``
