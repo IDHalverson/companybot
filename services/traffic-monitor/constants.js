@@ -6,6 +6,7 @@ module.exports = {
     // quantity: 12, // 12 messages
     messagesPerMinuteRate: 0.6,
     minimumActualTimespanInSeconds: 60 * 3, // 3 minutes
+    minimumParticipants: 2,
   },
   ACTIVE_CONVOS_CHANNEL: "C042JP62B9Q",
   RENOTIFY_WAIT_IN_MS: 1000 * 60 * 60 * 2, // 2 hours

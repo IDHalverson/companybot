@@ -59,7 +59,9 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           limit: 200,
           oldest: (now - TRIGGER.timespanInMS) / 1000,
         });
-
+      const participantIds = uniq(
+        recentConversationsInChannel.messages.map((m) => m.user)
+      );
       const allTimestamps = recentConversationsInChannel.messages.map((m) =>
         Number(m.ts)
       );
@@ -70,7 +72,8 @@ const handleTrafficMonitor = async ({ payload, context }) => {
         recentConversationsInChannel.messages.length / timespanInMinutes;
       if (
         TRIGGER.minimumActualTimespanInSeconds <= actualTimeScopeInSeconds &&
-        messagesPerMinuteRate >= TRIGGER.messagesPerMinuteRate
+        messagesPerMinuteRate >= TRIGGER.messagesPerMinuteRate &&
+        TRIGGER.minimumParticipants <= participantIds.length
       ) {
         // Check if we already notified that it's active within last RENOTIFY_WAIT_IN_MS ms
         const recentConversationsInActiveConvosChannel =
@@ -88,10 +91,6 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           });
 
         if (TEST_MODE || !alreadyPosted) {
-          const participantIds = uniq(
-            recentConversationsInChannel.messages.map((m) => m.user)
-          );
-
           const userInfos = await Promise.all(
             participantIds.map((p) =>
               app.client.users.info({
