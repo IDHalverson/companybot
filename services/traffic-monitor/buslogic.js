@@ -63,22 +63,17 @@ const handleTrafficMonitor = async ({ payload, context }) => {
           oldest: (now - TRIGGER.timespanInMS) / 1000,
         });
       const participantIds = uniq(
-        recentConversationsInChannel.messages.map((m) => m.user)
+        recentConversationsInChannel.messages.map((m) => m.user).filter(Boolean)
       );
-      let userInfos;
-      try {
-        userInfos = await Promise.all(
-          participantIds.map((p) =>
-            app.client.users.info({
-              token: context.botToken,
-              user: p,
-            })
-          )
-        );
-      } catch (e) {
-        console.log(e);
-        userInfos = [];
-      }
+      const userInfos = await Promise.all(
+        participantIds.map((p) =>
+          app.client.users.info({
+            token: context.botToken,
+            user: p,
+          })
+        )
+      );
+
       const nonBotParticipants = userInfos.filter((u) => !u.user.is_bot);
       const nonBotParticipantIds = nonBotParticipants.map((u) => u.user.id);
 
