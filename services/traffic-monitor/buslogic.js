@@ -12,9 +12,10 @@ const {
   MAXIMUM_KEYWORD_LENGTH,
 } = require("./constants");
 
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 const handleTrafficMonitor = async ({ payload, context }) => {
+  TEST_MODE && console.log("Warning! TEST_MODE is on!");
   // Only public channels
   // TODO: remove testing 'true'
   if (TEST_MODE || payload.channel_type === "channel") {
@@ -64,14 +65,20 @@ const handleTrafficMonitor = async ({ payload, context }) => {
       const participantIds = uniq(
         recentConversationsInChannel.messages.map((m) => m.user)
       );
-      const userInfos = await Promise.all(
-        participantIds.map((p) =>
-          app.client.users.info({
-            token: context.botToken,
-            user: p,
-          })
-        )
-      );
+      let userInfos;
+      try {
+        userInfos = await Promise.all(
+          participantIds.map((p) =>
+            app.client.users.info({
+              token: context.botToken,
+              user: p,
+            })
+          )
+        );
+      } catch (e) {
+        console.log(e);
+        userInfos = [];
+      }
       const nonBotParticipants = userInfos.filter((u) => !u.user.is_bot);
       const nonBotParticipantIds = nonBotParticipants.map((u) => u.user.id);
 
