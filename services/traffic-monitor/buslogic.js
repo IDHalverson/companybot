@@ -8,9 +8,11 @@ const {
   ACTIVE_CONVOS_CHANNEL,
   RENOTIFY_WAIT_IN_MS,
   BOT_TESTING_CHANNEL,
+  NUMBER_OF_KEYWORDS,
+  MAXIMUM_KEYWORD_LENGTH,
 } = require("./constants");
 
-const TEST_MODE = false;
+const TEST_MODE = true;
 
 const handleTrafficMonitor = async ({ payload, context }) => {
   // Only public channels
@@ -62,18 +64,41 @@ const handleTrafficMonitor = async ({ payload, context }) => {
       const participantIds = uniq(
         recentConversationsInChannel.messages.map((m) => m.user)
       );
+      const userInfos = await Promise.all(
+        participantIds.map((p) =>
+          app.client.users.info({
+            token: context.botToken,
+            user: p,
+          })
+        )
+      );
+      const nonBotParticipants = userInfos.filter((u) => !u.user.is_bot);
+      const nonBotParticipantIds = nonBotParticipants.map((u) => u.user.id);
+
       const allTimestamps = recentConversationsInChannel.messages.map((m) =>
         Number(m.ts)
       );
+      const allUniqueWords = uniq(
+        recentConversationsInChannel.messages.reduce((words, m) => {
+          // Only non-bots!
+          if (nonBotParticipantIds.includes(m.user)) {
+            return words.concat(m.text.split(/\s+/).map((it) => it.trim()));
+          } else {
+            return words;
+          }
+        }, [])
+      );
+
       const actualTimeScopeInSeconds =
         Math.max(...allTimestamps) - Math.min(...allTimestamps);
       const timespanInMinutes = actualTimeScopeInSeconds / 60;
-      const messagesPerMinuteRate =
-        recentConversationsInChannel.messages.length / timespanInMinutes;
+      const uniqueWordsPerMinuteRate =
+        allUniqueWords.length / timespanInMinutes;
+
       if (
         TRIGGER.minimumActualTimespanInSeconds <= actualTimeScopeInSeconds &&
-        messagesPerMinuteRate >= TRIGGER.messagesPerMinuteRate &&
-        TRIGGER.minimumParticipants <= participantIds.length
+        uniqueWordsPerMinuteRate >= TRIGGER.uniqueWordsPerMinuteRate &&
+        (TEST_MODE || TRIGGER.minimumParticipants <= nonBotParticipants.length)
       ) {
         // Check if we already notified that it's active within last RENOTIFY_WAIT_IN_MS ms
         const recentConversationsInActiveConvosChannel =
@@ -86,32 +111,48 @@ const handleTrafficMonitor = async ({ payload, context }) => {
         const alreadyPosted =
           recentConversationsInActiveConvosChannel.messages.find((message) => {
             return message.text.startsWith(
-              `Active conversation in <#${payload.channel}>`
+              `*Active conversation in <#${payload.channel}>`
             );
           });
 
         if (TEST_MODE || !alreadyPosted) {
-          const userInfos = await Promise.all(
-            participantIds.map((p) =>
-              app.client.users.info({
-                token: context.botToken,
-                user: p,
-              })
-            )
+          let uniqueWordsSortedByLength = [...allUniqueWords];
+          uniqueWordsSortedByLength.sort((a, b) => b.length - a.length);
+          const uniqueWordsSortedByLengthNoSuperLongWords =
+            uniqueWordsSortedByLength.filter(
+              (word) => word.length <= MAXIMUM_KEYWORD_LENGTH
+            );
+
+          const choices = uniqueWordsSortedByLengthNoSuperLongWords.slice(
+            0,
+            NUMBER_OF_KEYWORDS
           );
+
+          const emojiRegex = /^:[^:]+:$/;
+
+          const firstLine = `*Active conversation detected in <#${payload.channel}>*`;
+          const usersLine = `\n\n:busts_in_silhouette: ${nonBotParticipants
+            .map(
+              (u) => `\`${u.user.profile.display_name || u.user.real_name}\``
+            )
+            .join(", ")}`;
+          const keywordsLine = `\n:speech_balloon: ${choices
+            .map((choice) =>
+              choice.match(emojiRegex) || choice.match(/^`[^`]+`$/)
+                ? choice
+                : `\`${choice}\``
+            )
+            .join(", ")}`;
+          const triggerLine = `\n:chart_with_upwards_trend: _${
+            allUniqueWords.length
+          } unique words in the span of ~${Math.round(
+            actualTimeScopeInSeconds / 60
+          )} minutes._`;
 
           await app.client.chat.postMessage({
             token: context.botToken,
             channel: TEST_MODE ? BOT_TESTING_CHANNEL : ACTIVE_CONVOS_CHANNEL,
-            text: `Active conversation detected in <#${payload.channel}>\n\n${
-              recentConversationsInChannel.messages.length
-            } messages in the span of ~${Math.round(
-              actualTimeScopeInSeconds / 60
-            )} minutes. Participants: ${userInfos
-              .map(
-                (u) => `\`${u.user.profile.display_name || u.user.real_name}\``
-              )
-              .join(", ")}`,
+            text: `${firstLine}${usersLine}${keywordsLine}${triggerLine}`,
           });
         }
       }
