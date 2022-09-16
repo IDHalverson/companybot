@@ -1,6 +1,6 @@
 const { get, uniq, result } = require("lodash");
 const { app } = require("../../index");
-const {} = require("./constants");
+const { EXCLUDED_USERNAMES } = require("./constants");
 const { sortScoreboard } = require("./utils");
 
 /**
@@ -27,7 +27,7 @@ const handleWordlePosted = async ({
   isReplayRoutineForOneMessage,
   accumulatedScoreboard,
 }) => {
-  let conversationsLast24Hours = [];
+  let wordleChannelHistory = [];
   let cursor;
   let doneOnce = false;
   while (cursor || !doneOnce) {
@@ -35,14 +35,12 @@ const handleWordlePosted = async ({
     const results = await app.client.conversations.history({
       token: context.botToken,
       channel: payload.channel,
-      oldest: Date.now() / 1000 - 60 * 60 * 25, // now - 25 hours
+      oldest: Date.now() / 1000 - 60 * 60 * 24 * 30, // about a month
       inclusive: true,
       limit: 200,
       cursor,
     });
-    conversationsLast24Hours = conversationsLast24Hours.concat(
-      results.messages
-    );
+    wordleChannelHistory = wordleChannelHistory.concat(results.messages);
     cursor = results.response_metadata.next_cursor;
   }
 
@@ -52,8 +50,8 @@ const handleWordlePosted = async ({
   if (isReplay && !isReplayRoutineForOneMessage) {
     let accumulatedScoreboard;
     const usersDoneAlready = [];
-    for (let i = 0; i < conversationsLast24Hours.length; i++) {
-      const message = conversationsLast24Hours[i];
+    for (let i = 0; i < wordleChannelHistory.length; i++) {
+      const message = wordleChannelHistory[i];
       if (
         message.text.startsWith(`Wordle ${wordleToReplay}`) &&
         !usersDoneAlready.includes(message.user)
@@ -76,15 +74,25 @@ const handleWordlePosted = async ({
         usersDoneAlready.push(result.user);
       }
     }
-    const finalScoreboard = sortScoreboard(accumulatedScoreboard);
+    const finalScoreboard = !accumulatedScoreboard
+      ? null
+      : sortScoreboard(accumulatedScoreboard);
 
-    app.client.chat.postMessage({
-      token: context.botToken,
-      channel: payload.channel,
-      username: "Word",
-      icon_emoji: ":word:",
-      text: finalScoreboard,
-    });
+    finalScoreboard
+      ? app.client.chat.postMessage({
+          token: context.botToken,
+          channel: payload.channel,
+          username: "Word",
+          icon_emoji: ":word:",
+          text: finalScoreboard,
+        })
+      : app.client.chat.postMessage({
+          token: context.botToken,
+          channel: payload.channel,
+          username: "Word",
+          icon_emoji: ":word:",
+          text: "No valid Wordles to replay.",
+        });
     /**
      * END REPLAY LOGIC
      */
@@ -97,7 +105,7 @@ const handleWordlePosted = async ({
       ? accumulatedScoreboard
         ? { text: accumulatedScoreboard }
         : null
-      : conversationsLast24Hours.find((message) =>
+      : wordleChannelHistory.find((message) =>
           message.text.startsWith(`*Scoreboard: Wordle ${wordleNumberPosted}`)
         );
 
@@ -276,6 +284,7 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
   const scoreboardFinalText = sortScoreboard(`*2 Week Wordle Scoreboard*
 
 ${Object.entries(userScoreTotals)
+  .filter(([username]) => !EXCLUDED_USERNAMES.includes(username))
   .map(([username, score], ix) => `\n\`${score}\`  ${username}`)
   .join("")}`);
 
