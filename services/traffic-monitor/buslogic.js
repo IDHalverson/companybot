@@ -113,7 +113,7 @@ const handleTrafficMonitor = async ({ payload, context }) => {
         const alreadyPosted =
           recentConversationsInActiveConvosChannel.messages.find((message) => {
             return message.text.startsWith(
-              `*Active conversation in <#${payload.channel}>`
+              `*Active conversation detected in <#${payload.channel}>`
             );
           });
 
