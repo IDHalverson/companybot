@@ -7,8 +7,9 @@ const app = new App({
 });
 
 (async () => {
-  await app.start(process.env.PORT || 3000);
-  console.log("Company Bot is now running!");
+  const port = process.env.PORT || 3000;
+  await app.start(port);
+  console.log(`Company Bot is now running on port ${port}!`);
 })();
 
 module.exports = { app, WorkflowStep };
@@ -27,3 +28,4 @@ require("./services/wordle/routes.js");
 require("./services/your-face/routes.js");
 require("./services/confessions/routes.js");
 require("./services/traffic-monitor/routes.js");
+require("./services/random-fact/routes.js");
