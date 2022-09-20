@@ -6,6 +6,8 @@ const sortScoreboard = (scoreboard) => {
     );
   });
 
+  const IDEAL_MEDAL_COUNT = 3;
+
   const firstPlaceIndexes = lines
     .map((line, index) =>
       Number(line.match(/\`([0-9]+)\`/)[1]) ===
@@ -14,26 +16,36 @@ const sortScoreboard = (scoreboard) => {
         : null
     )
     .filter((it) => it != null);
-  const secondPlaceIndexes = lines
-    .map((line, index) =>
-      Number(line.match(/\`([0-9]+)\`/)[1]) ===
-      Number(
-        lines[firstPlaceIndexes.slice(-1)[0] + 1]?.match(/\`([0-9]+)\`/)[1]
-      )
-        ? index
-        : null
-    )
-    .filter((it) => it != null);
-  const thirdPlaceIndexes = lines
-    .map((line, index) =>
-      Number(line.match(/\`([0-9]+)\`/)[1]) ===
-      Number(
-        lines[secondPlaceIndexes.slice(-1)[0] + 1]?.match(/\`([0-9]+)\`/)[1]
-      )
-        ? index
-        : null
-    )
-    .filter((it) => it != null);
+  const secondPlaceIndexes =
+    firstPlaceIndexes.length >= IDEAL_MEDAL_COUNT
+      ? []
+      : lines
+          .map((line, index) =>
+            Number(line.match(/\`([0-9]+)\`/)[1]) ===
+            Number(
+              lines[firstPlaceIndexes.slice(-1)[0] + 1]?.match(
+                /\`([0-9]+)\`/
+              )[1]
+            )
+              ? index
+              : null
+          )
+          .filter((it) => it != null);
+  const thirdPlaceIndexes =
+    secondPlaceIndexes.length >= IDEAL_MEDAL_COUNT
+      ? []
+      : lines
+          .map((line, index) =>
+            Number(line.match(/\`([0-9]+)\`/)[1]) ===
+            Number(
+              lines[secondPlaceIndexes.slice(-1)[0] + 1]?.match(
+                /\`([0-9]+)\`/
+              )[1]
+            )
+              ? index
+              : null
+          )
+          .filter((it) => it != null);
 
   firstPlaceIndexes.forEach((idx) => {
     lines[idx] += " :first_place_medal:";
