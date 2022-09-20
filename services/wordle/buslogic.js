@@ -78,21 +78,52 @@ const handleWordlePosted = async ({
       ? null
       : sortScoreboard(accumulatedScoreboard);
 
+    // Delete old scoreboard(s)
+    let existingScoreBoardsForReplayItem = [];
+    let doneOneTime = false;
+    let cursor;
+    while (cursor || !doneOneTime) {
+      doneOneTime = true;
+      const result = await app.client.conversations.history({
+        token: context.botToken,
+        channel: payload.channel,
+        oldest: Date.now() / 1000 - 60 * 60 * 24 * 30, // about a month
+        inclusive: true,
+        limit: 200,
+        cursor,
+      });
+      existingScoreBoardsForReplayItem =
+        existingScoreBoardsForReplayItem.concat(result.messages);
+      cursor = result.response_metadata?.next_cursor;
+    }
+    const existingOnes = existingScoreBoardsForReplayItem?.filter((m) =>
+      m.text.startsWith(`*Scoreboard: Wordle ${wordleToReplay}`)
+    );
+    for (let i = 0; i < existingOnes.length; i++) {
+      await app.client.chat.delete({
+        token: process.env.ADMIN_USER_TOKEN,
+        ts: existingOnes[i].ts,
+        channel: payload.channel,
+      });
+    }
+
+    // Post replayed scoreboard
     finalScoreboard
-      ? app.client.chat.postMessage({
+      ? await app.client.chat.postMessage({
           token: context.botToken,
           channel: payload.channel,
           username: "Word",
           icon_emoji: ":word:",
           text: finalScoreboard,
         })
-      : app.client.chat.postMessage({
+      : await app.client.chat.postMessage({
           token: context.botToken,
           channel: payload.channel,
           username: "Word",
           icon_emoji: ":word:",
           text: "No valid Wordles to replay.",
         });
+
     /**
      * END REPLAY LOGIC
      */
