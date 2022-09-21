@@ -32,7 +32,7 @@ const sortScoreboard = (scoreboard) => {
           )
           .filter((it) => it != null);
   const thirdPlaceIndexes =
-    secondPlaceIndexes.length >= IDEAL_MEDAL_COUNT
+    [...firstPlaceIndexes, ...secondPlaceIndexes].length >= IDEAL_MEDAL_COUNT
       ? []
       : lines
           .map((line, index) =>
