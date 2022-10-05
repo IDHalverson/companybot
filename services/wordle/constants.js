@@ -1,3 +1,3 @@
 module.exports = {
-  EXCLUDED_USERNAMES: ["Ian"],
+  EXCLUDED_USERNAMES: [],
 };
