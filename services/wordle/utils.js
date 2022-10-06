@@ -1,8 +1,10 @@
 const sortScoreboard = (scoreboard) => {
   const lines = scoreboard.match(/\n\`[^\n]+/g);
+  console.log(lines);
   lines.sort((a, b) => {
     return (
-      Number(b.match(/\`([0-9]+)\`/)[1]) - Number(a.match(/\`([0-9]+)\`/)[1])
+      Number(b.match(/\`([0-9\.]+)\`/)[1]) -
+      Number(a.match(/\`([0-9\.]+)\`/)[1])
     );
   });
 
@@ -10,8 +12,8 @@ const sortScoreboard = (scoreboard) => {
 
   const firstPlaceIndexes = lines
     .map((line, index) =>
-      Number(line.match(/\`([0-9]+)\`/)[1]) ===
-      Number(lines[0].match(/\`([0-9]+)\`/)[1])
+      Number(line.match(/\`([0-9\.]+)\`/)[1]) ===
+      Number(lines[0].match(/\`([0-9\.]+)\`/)[1])
         ? index
         : null
     )
@@ -21,10 +23,10 @@ const sortScoreboard = (scoreboard) => {
       ? []
       : lines
           .map((line, index) =>
-            Number(line.match(/\`([0-9]+)\`/)[1]) ===
+            Number(line.match(/\`([0-9\.]+)\`/)[1]) ===
             Number(
               lines[firstPlaceIndexes.slice(-1)[0] + 1]?.match(
-                /\`([0-9]+)\`/
+                /\`([0-9\.]+)\`/
               )[1]
             )
               ? index
@@ -36,10 +38,10 @@ const sortScoreboard = (scoreboard) => {
       ? []
       : lines
           .map((line, index) =>
-            Number(line.match(/\`([0-9]+)\`/)[1]) ===
+            Number(line.match(/\`([0-9\.]+)\`/)[1]) ===
             Number(
               lines[secondPlaceIndexes.slice(-1)[0] + 1]?.match(
-                /\`([0-9]+)\`/
+                /\`([0-9\.]+)\`/
               )[1]
             )
               ? index

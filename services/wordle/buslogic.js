@@ -1,6 +1,6 @@
 const { get, uniq, result } = require("lodash");
 const { app } = require("../../index");
-const { EXCLUDED_USERNAMES } = require("./constants");
+const { EXCLUDED_USERNAMES, START_FRESH } = require("./constants");
 const { sortScoreboard } = require("./utils");
 
 /**
@@ -66,6 +66,9 @@ const handleWordlePosted = async ({
           context: {
             botToken: context.botToken,
             matches: [message.text.match(/Wordle [0-9]+ ([0-6X])\/6/g)[0]],
+            isHardMode: Boolean(
+              message.text.match(/Wordle [0-9]+ [0-6X]\/6\*/)
+            ),
           },
           isReplayRoutineForOneMessage: true,
           accumulatedScoreboard,
@@ -131,7 +134,19 @@ const handleWordlePosted = async ({
     const wordleNumberPosted =
       context.matches[0].match(/Wordle ([0-9]+) /)?.[1];
     const rawScore = context.matches[0].match(/Wordle [0-9]+ ([0-6X])\/6/)?.[1];
-    const score = 7 - (rawScore === "X" ? 7 : Number(rawScore));
+    console.log(context.matches[0]);
+    const isHardMode = Boolean(context.isHardMode);
+    let score = {
+      ["1"]: 10,
+      ["2"]: 7,
+      ["3"]: 5,
+      ["4"]: 4,
+      ["5"]: 3,
+      ["6"]: 2,
+      ["X"]: 1,
+    }[rawScore];
+    if (isHardMode) score += 0.5;
+    // 7 - (rawScore === "X" ? 7 : Number(rawScore));
     const existingScoreBoard = isReplayRoutineForOneMessage
       ? accumulatedScoreboard
         ? { text: accumulatedScoreboard }
@@ -262,12 +277,25 @@ const postLongrunningScoreboard = async ({ payload, context }) => {
       }
     }
     if (!excludeThis && scoreboard) {
-      const usersAndScores = scoreboard.text.match(/\n\`[0-7]\`  [^\n:]+/g);
+      const usersAndScores = scoreboard.text.match(/\n\`[0-9\.]+\`  [^\n:]+/g);
       const usersAndScoresMap = {};
       if (usersAndScores)
         usersAndScores.forEach((match) => {
-          const score = match.match(/\n\`([0-7])\`/)[1];
-          const username = match.match(/\n\`[0-7]\`  ([^\n:]+)/)[1]?.trim();
+          const _score = match.match(/\n\`([0-9\.]+)\`/)[1];
+          /* CONVERT TO NEW SCORE SYSTEM */
+          const score =
+            wordle >= START_FRESH
+              ? _score
+              : {
+                  ["0"]: "1",
+                  ["1"]: "2",
+                  ["2"]: "3",
+                  ["3"]: "4",
+                  ["4"]: "5",
+                  ["5"]: "7",
+                  ["6"]: "10",
+                }[_score];
+          const username = match.match(/\n\`[0-9\.]+\`  ([^\n:]+)/)[1]?.trim();
           usersAndScoresMap[username] = score;
         });
       scoreboardsMap[wordle] = usersAndScoresMap;
