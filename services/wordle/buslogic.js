@@ -134,7 +134,6 @@ const handleWordlePosted = async ({
     const wordleNumberPosted =
       context.matches[0].match(/Wordle ([0-9]+) /)?.[1];
     const rawScore = context.matches[0].match(/Wordle [0-9]+ ([0-6X])\/6/)?.[1];
-    console.log(context.matches[0]);
     const isHardMode = Boolean(context.isHardMode);
     let score = {
       ["1"]: 10,

@@ -1,6 +1,5 @@
 const sortScoreboard = (scoreboard) => {
   const lines = scoreboard.match(/\n\`[^\n]+/g);
-  console.log(lines);
   lines.sort((a, b) => {
     return (
       Number(b.match(/\`([0-9\.]+)\`/)[1]) -
