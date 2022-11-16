@@ -1,6 +1,6 @@
 {
   "name": "company-bot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Slack API for custom interactions @ Your Company",
   "main": "index.js",
   "scripts": {
