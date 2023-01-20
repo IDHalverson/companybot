@@ -215,147 +215,198 @@ const replayScoreboard = async ({ context, payload }) => {
   });
 };
 
-const postLongrunningScoreboard = async ({ payload, context }) => {
-  let conversationsLast2Weeks = [];
-  let cursor;
-  let doneOnce = false;
-  while (cursor || !doneOnce) {
-    doneOnce = true;
-    const results = await app.client.conversations.history({
-      token: context.botToken,
-      channel: payload.channel,
-      oldest: Date.now() / 1000 - 60 * 60 * 24 * 15, // now - 15 days
-      inclusive: true,
-      limit: 200,
-      cursor,
-    });
-    conversationsLast2Weeks = conversationsLast2Weeks.concat(results.messages);
-    cursor = results.response_metadata.next_cursor;
-  }
-
-  const allScoreboards = conversationsLast2Weeks.filter((message) => {
-    return message.text.match(/^\*Scoreboard: Wordle ([0-9]+)/);
-  });
-
-  const mostRecentWordle = allScoreboards.reduce((wordle, scoreboard) => {
-    const number = scoreboard.text.match(/\*Scoreboard: Wordle ([0-9]+)/)[1];
-    if (Number(number) > wordle) return Number(number);
-    else return wordle;
-  }, 0);
-
-  const wordlesToInclude = [...new Array(14)]
-    .fill()
-    .map((_, i) => mostRecentWordle - i);
-
-  const scoreboardsToInclude = {};
-
-  wordlesToInclude.forEach((wordle) => {
-    allScoreboards.forEach((scoreboard) => {
-      if (scoreboard.text.startsWith(`*Scoreboard: Wordle ${wordle}`)) {
-        if (
-          !scoreboardsToInclude[`${wordle}`] ||
-          scoreboard.ts > scoreboardsToInclude[`${wordle}`].ts
-        ) {
-          scoreboardsToInclude[`${wordle}`] = scoreboard;
-        }
-      }
-    });
-  });
-
-  const scoreboardsMap = {};
-
-  Object.entries(scoreboardsToInclude).forEach(([wordle, scoreboard]) => {
-    const wordleNum = Number(wordle);
-    const aSundayWordle = 449;
-    let sundayWordle = aSundayWordle;
-    let excludeThis = false;
-    while (sundayWordle <= wordleNum) {
-      if (sundayWordle === wordleNum) {
-        excludeThis = true;
-        break;
-      } else {
-        sundayWordle += 7;
-      }
+const postLongrunningScoreboard =
+  (includeDetails = false) =>
+  async ({ payload, context }) => {
+    let conversationsLast2Weeks = [];
+    let cursor;
+    let doneOnce = false;
+    while (cursor || !doneOnce) {
+      doneOnce = true;
+      const results = await app.client.conversations.history({
+        token: context.botToken,
+        channel: payload.channel,
+        oldest: Date.now() / 1000 - 60 * 60 * 24 * 15, // now - 15 days
+        inclusive: true,
+        limit: 200,
+        cursor,
+      });
+      conversationsLast2Weeks = conversationsLast2Weeks.concat(
+        results.messages
+      );
+      cursor = results.response_metadata.next_cursor;
     }
-    if (!excludeThis && scoreboard) {
-      const usersAndScores = scoreboard.text.match(/\n\`[0-9\.]+\`  [^\n:]+/g);
-      const usersAndScoresMap = {};
-      if (usersAndScores)
-        usersAndScores.forEach((match) => {
-          const _score = match.match(/\n\`([0-9\.]+)\`/)[1];
-          /* CONVERT TO NEW SCORE SYSTEM */
-          const score =
-            wordle >= START_FRESH
-              ? _score
-              : {
-                  ["0"]: "1",
-                  ["1"]: "2",
-                  ["2"]: "3",
-                  ["3"]: "4",
-                  ["4"]: "5",
-                  ["5"]: "7",
-                  ["6"]: "10",
-                }[_score];
-          const username = match.match(/\n\`[0-9\.]+\`  ([^\n:]+)/)[1]?.trim();
-          usersAndScoresMap[username] = score;
-        });
-      scoreboardsMap[wordle] = usersAndScoresMap;
-    }
-  });
 
-  const userTotalScores = {};
-  Object.entries(scoreboardsMap).forEach(([wordle, scoreboard]) => {
-    Object.entries(scoreboard).forEach(([username, score]) => {
-      userTotalScores[username] = [...(userTotalScores[username] || []), score];
+    const allScoreboards = conversationsLast2Weeks.filter((message) => {
+      return message.text.match(/^\*Scoreboard: Wordle ([0-9]+)/);
     });
-  });
 
-  const usersTopScoresMap = {};
-
-  Object.entries(userTotalScores).forEach(([username, scores]) => {
-    const top7Scores = scores.reduce(
-      (top7, score, scoreIndex) => {
-        const top7Cloned = [...top7];
-        const lowestOfTop7Index = top7Cloned.findIndex((s, i) =>
-          top7Cloned.every((t, tI) => {
-            return tI === i || Number(t.s) >= Number(s.s);
-          })
-        );
-        const alreadyInTop7 = top7Cloned.some(
-          (topNum) => topNum.ix === scoreIndex
-        );
-        if (score > top7Cloned[lowestOfTop7Index].s && !alreadyInTop7) {
-          top7Cloned[lowestOfTop7Index] = { s: Number(score), ix: scoreIndex };
-        }
-        return top7Cloned;
-      },
-      [...scores.slice(0, 7).map((it, i) => ({ s: Number(it), ix: i }))]
-    );
-    usersTopScoresMap[username] = top7Scores.map((sc) => sc.s);
-  });
-
-  const userScoreTotals = {};
-  Object.entries(usersTopScoresMap).forEach(([username, topScores]) => {
-    userScoreTotals[username] = topScores.reduce((total, score) => {
-      return total + score;
+    const mostRecentWordle = allScoreboards.reduce((wordle, scoreboard) => {
+      const number = scoreboard.text.match(/\*Scoreboard: Wordle ([0-9]+)/)[1];
+      if (Number(number) > wordle) return Number(number);
+      else return wordle;
     }, 0);
-  });
 
-  const scoreboardFinalText = sortScoreboard(`*2 Week Wordle Scoreboard*
+    const wordlesToInclude = [...new Array(14)]
+      .fill()
+      .map((_, i) => mostRecentWordle - i);
+
+    const scoreboardsToInclude = {};
+
+    wordlesToInclude.forEach((wordle) => {
+      allScoreboards.forEach((scoreboard) => {
+        if (scoreboard.text.startsWith(`*Scoreboard: Wordle ${wordle}`)) {
+          if (
+            !scoreboardsToInclude[`${wordle}`] ||
+            scoreboard.ts > scoreboardsToInclude[`${wordle}`].ts
+          ) {
+            scoreboardsToInclude[`${wordle}`] = scoreboard;
+          }
+        }
+      });
+    });
+
+    const scoreboardsMap = {};
+
+    Object.entries(scoreboardsToInclude).forEach(([wordle, scoreboard]) => {
+      const wordleNum = Number(wordle);
+      const aSundayWordle = 449;
+      let sundayWordle = aSundayWordle;
+      let excludeThis = false;
+      while (sundayWordle <= wordleNum) {
+        if (sundayWordle === wordleNum) {
+          excludeThis = true;
+          break;
+        } else {
+          sundayWordle += 7;
+        }
+      }
+      if (!excludeThis && scoreboard) {
+        const usersAndScores = scoreboard.text.match(
+          /\n\`[0-9\.]+\`  [^\n:]+/g
+        );
+        const usersAndScoresMap = {};
+        if (usersAndScores)
+          usersAndScores.forEach((match) => {
+            const _score = match.match(/\n\`([0-9\.]+)\`/)[1];
+            /* CONVERT TO NEW SCORE SYSTEM */
+            const score =
+              wordle >= START_FRESH
+                ? _score
+                : {
+                    ["0"]: "1",
+                    ["1"]: "2",
+                    ["2"]: "3",
+                    ["3"]: "4",
+                    ["4"]: "5",
+                    ["5"]: "7",
+                    ["6"]: "10",
+                  }[_score];
+            const username = match
+              .match(/\n\`[0-9\.]+\`  ([^\n:]+)/)[1]
+              ?.trim();
+            usersAndScoresMap[username] = score;
+          });
+        scoreboardsMap[wordle] = usersAndScoresMap;
+      }
+    });
+
+    const userTotalScores = {};
+    Object.entries(scoreboardsMap).forEach(([wordle, scoreboard]) => {
+      Object.entries(scoreboard).forEach(([username, score]) => {
+        userTotalScores[username] = [
+          ...(userTotalScores[username] || []),
+          score,
+        ];
+      });
+    });
+
+    const usersTopScoresMap = {};
+
+    Object.entries(userTotalScores).forEach(([username, scores]) => {
+      const top7Scores = scores.reduce(
+        (top7, score, scoreIndex) => {
+          const top7Cloned = [...top7];
+          const lowestOfTop7Index = top7Cloned.findIndex((s, i) =>
+            top7Cloned.every((t, tI) => {
+              return tI === i || Number(t.s) >= Number(s.s);
+            })
+          );
+          const alreadyInTop7 = top7Cloned.some(
+            (topNum) => topNum.ix === scoreIndex
+          );
+          if (score > top7Cloned[lowestOfTop7Index].s && !alreadyInTop7) {
+            top7Cloned[lowestOfTop7Index] = {
+              s: Number(score),
+              ix: scoreIndex,
+            };
+          }
+          return top7Cloned;
+        },
+        [...scores.slice(0, 7).map((it, i) => ({ s: Number(it), ix: i }))]
+      );
+      usersTopScoresMap[username] = top7Scores.map((sc) => sc.s);
+    });
+
+    const userScoreTotals = {};
+    Object.entries(usersTopScoresMap).forEach(([username, topScores]) => {
+      userScoreTotals[username] = topScores.reduce((total, score) => {
+        return total + score;
+      }, 0);
+    });
+
+    const translateScoreBackwardsMap = {
+      10: 1,
+      10.5: "1*",
+      7: 2,
+      7.5: "2*",
+      5: 3,
+      5.5: "3*",
+      4: 4,
+      4.5: "4*",
+      3: 5,
+      3.5: "5*",
+      2: 6,
+      2.5: "6*",
+      1: "X",
+      1.5: "X*",
+    };
+
+    const scoreboardFinalText =
+      sortScoreboard(`*2 Week Wordle Scoreboard*
 
 ${Object.entries(userScoreTotals)
   .filter(([username]) => !EXCLUDED_USERNAMES.includes(username))
   .map(([username, score], ix) => `\n\`${score}\`  ${username}`)
-  .join("")}`);
+  .join("")}`) +
+      `
+  
+  ${
+    includeDetails
+      ? `
+  
+  ${Object.entries(usersTopScoresMap)
+    .filter(([username]) => !EXCLUDED_USERNAMES.includes(username))
+    .map(
+      ([username, topScores]) =>
+        `\n${topScores
+          .sort()
+          .reverse()
+          .map((sc) => `\`${translateScoreBackwardsMap[sc]} (${sc})\``)
+          .join("  ")}  ${username}`
+    )
+    .join("")}`
+      : ""
+  }`;
 
-  await app.client.chat.postMessage({
-    token: context.botToken,
-    channel: payload.channel,
-    text: scoreboardFinalText,
-    username: "Word",
-    icon_emoji: ":word:",
-  });
-};
+    await app.client.chat.postMessage({
+      token: context.botToken,
+      channel: payload.channel,
+      text: scoreboardFinalText,
+      username: "Word",
+      icon_emoji: ":word:",
+    });
+  };
 
 module.exports = {
   handleWordlePosted,
