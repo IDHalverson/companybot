@@ -12,12 +12,12 @@ const {
   MAXIMUM_KEYWORD_LENGTH,
 } = require("./constants");
 
+// Careful not to leave this on.
 const TEST_MODE = false;
 
 const handleTrafficMonitor = async ({ payload, context }) => {
   TEST_MODE && console.log("Warning! TEST_MODE is on!");
   // Only public channels
-  // TODO: remove testing 'true'
   if (TEST_MODE || payload.channel_type === "channel") {
     const now = Date.now();
 
@@ -84,7 +84,11 @@ const handleTrafficMonitor = async ({ payload, context }) => {
         recentConversationsInChannel.messages.reduce((words, m) => {
           // Only non-bots!
           if (nonBotParticipantIds.includes(m.user)) {
-            return words.concat(m.text.split(/\s+/).map((it) => it.trim()));
+            return words.concat(
+              m.text
+                .split(/\s+/)
+                .map((it) => it.trim().replace(/\W+/g, "").replace(/_/g, ""))
+            );
           } else {
             return words;
           }
