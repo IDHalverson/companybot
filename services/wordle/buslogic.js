@@ -34,7 +34,7 @@ const handleWordlePosted = async ({
   await app.client.chat.postEphemeral({
     token: context.botToken,
     channel: payload.channel,
-    user: message.user,
+    user: payload.user,
     text: `${BURRIS_CHANNEL} ${context.channel} ${
       payload.channel
     } ${doExcludeWordle(context, {
@@ -51,7 +51,7 @@ const handleWordlePosted = async ({
     await app.client.chat.postEphemeral({
       token: context.botToken,
       channel: payload.channel,
-      user: message.user,
+      user: payload.user,
       text:
         "Wordle scores are only tracked " +
         (BURRIS_CHANNEL === context.channel ? "Mon-Fri" : "Mon-Sat"),
