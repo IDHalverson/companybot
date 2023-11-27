@@ -21,11 +21,17 @@ const handleTrafficMonitor = async ({ payload, context }) => {
   if (TEST_MODE || payload.channel_type === "channel") {
     const now = Date.now();
 
-    const recentMessages = await app.client.conversations.history({
-      token: context.botToken,
-      channel: TRAFFIC_CHECKS_CHANNEL,
-      limit: 10,
-    });
+    let recentMessages;
+    try {
+      recentMessages = await app.client.conversations.history({
+        token: context.botToken,
+        channel: TRAFFIC_CHECKS_CHANNEL,
+        limit: 10,
+      });
+    } catch (e) {
+      // no traffic channel available
+      return;
+    }
 
     const mostRecentTrafficCheck = recentMessages.messages.reduce(
       (latest, message) => {
