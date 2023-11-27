@@ -31,17 +31,6 @@ const handleWordlePosted = async ({
   isReplayRoutineForOneMessage,
   accumulatedScoreboard,
 }) => {
-  await app.client.chat.postEphemeral({
-    token: context.botToken,
-    channel: payload.channel,
-    user: payload.user,
-    text: `${BURRIS_CHANNEL} ${context.channel} ${
-      payload.channel
-    } ${doExcludeWordle(context, {
-      excludeSundays: true,
-      excludeWeekends: BURRIS_CHANNEL === payload.channel,
-    })}`,
-  });
   if (
     doExcludeWordle(context, {
       excludeSundays: true,
