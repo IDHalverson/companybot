@@ -1,7 +1,11 @@
 const { get, uniq, result } = require("lodash");
 const { app } = require("../../index");
-const { EXCLUDED_USERNAMES, START_FRESH } = require("./constants");
-const { sortScoreboard } = require("./utils");
+const {
+  EXCLUDED_USERNAMES,
+  START_FRESH,
+  BURRIS_CHANNEL,
+} = require("./constants");
+const { sortScoreboard, doExcludeWordle } = require("./utils");
 
 /**
  * Ordinary flow for a Wordle posted is not recursive.
@@ -27,6 +31,33 @@ const handleWordlePosted = async ({
   isReplayRoutineForOneMessage,
   accumulatedScoreboard,
 }) => {
+  await app.client.chat.postEphemeral({
+    token: context.botToken,
+    channel: payload.channel,
+    user: message.user,
+    text: `${BURRIS_CHANNEL} ${context.channel} ${
+      payload.channel
+    } ${doExcludeWordle(context, {
+      excludeSundays: true,
+      excludeWeekends: BURRIS_CHANNEL === payload.channel,
+    })}`,
+  });
+  if (
+    doExcludeWordle(context, {
+      excludeSundays: true,
+      excludeWeekends: BURRIS_CHANNEL === payload.channel,
+    })
+  ) {
+    await app.client.chat.postEphemeral({
+      token: context.botToken,
+      channel: payload.channel,
+      user: message.user,
+      text:
+        "Wordle scores are only tracked " +
+        (BURRIS_CHANNEL === context.channel ? "Mon-Fri" : "Mon-Sat"),
+    });
+  }
+
   let wordleChannelHistory = [];
   let cursor;
   let doneOnce = false;
@@ -270,17 +301,14 @@ const postLongrunningScoreboard =
 
     Object.entries(scoreboardsToInclude).forEach(([wordle, scoreboard]) => {
       const wordleNum = Number(wordle);
-      const aSundayWordle = 449;
-      let sundayWordle = aSundayWordle;
-      let excludeThis = false;
-      while (sundayWordle <= wordleNum) {
-        if (sundayWordle === wordleNum) {
-          excludeThis = true;
-          break;
-        } else {
-          sundayWordle += 7;
-        }
-      }
+      const excludeThis = doExcludeWordle(
+        null,
+        {
+          excludeSundays: true,
+          excludeWeekends: BURRIS_CHANNEL === context.channel,
+        },
+        wordleNum
+      );
       if (!excludeThis && scoreboard) {
         const usersAndScores = scoreboard.text.match(
           /\n\`[0-9\.]+\`  [^\n:]+/g

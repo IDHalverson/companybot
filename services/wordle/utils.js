@@ -67,6 +67,34 @@ const sortScoreboard = (scoreboard) => {
   return finalScoreboard;
 };
 
+const doExcludeWordle = (
+  context,
+  { excludeSundays, excludeWeekends } = {},
+  explicitlyPassedWordleNumber = null
+) => {
+  const wordleNum = Number(
+    explicitlyPassedWordleNumber
+      ? explicitlyPassedWordleNumber
+      : context.matches[0].match(/Wordle ([0-9]+) /)?.[1]
+  );
+  const aSundayWordle = 449;
+  let sundayWordle = aSundayWordle;
+  let excludeThis = false;
+  while (sundayWordle <= wordleNum) {
+    if ((excludeSundays || excludeWeekends) && sundayWordle === wordleNum) {
+      excludeThis = true;
+      break;
+    } else if (excludeWeekends && sundayWordle - 1 === wordleNum) {
+      excludeThis = true;
+      break;
+    } else {
+      sundayWordle += 7;
+    }
+  }
+  return excludeThis;
+};
+
 module.exports = {
   sortScoreboard,
+  doExcludeWordle,
 };

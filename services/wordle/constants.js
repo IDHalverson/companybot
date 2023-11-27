@@ -1,4 +1,5 @@
 module.exports = {
   EXCLUDED_USERNAMES: [],
   START_FRESH: 0,
+  BURRIS_CHANNEL: "C067EV50MS6",
 };
