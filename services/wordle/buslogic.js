@@ -7,6 +7,14 @@ const {
 } = require("./constants");
 const { sortScoreboard, doExcludeWordle } = require("./utils");
 
+const replaceEmojiAndComma = (txt) => {
+  const ret = txt
+    .replace(/Wordle ([1-9]+),/, "Wordle $1")
+    .replace(/Wordle ([0-9]+)(\s:[a-z-_]+:)/, "Wordle $1");
+  // ret !== txt && console.log("\n\nReplacing\n\n", txt, "\n\nwith\n\n", ret);
+  return ret;
+};
+
 /**
  * Ordinary flow for a Wordle posted is not recursive.
  *
@@ -31,6 +39,10 @@ const handleWordlePosted = async ({
   isReplayRoutineForOneMessage,
   accumulatedScoreboard,
 }) => {
+  if (context.matches[0]) {
+    context.matches[0] = replaceEmojiAndComma(context.matches[0]);
+  }
+
   if (
     doExcludeWordle(context, {
       excludeSundays: true,
@@ -63,6 +75,11 @@ const handleWordlePosted = async ({
     wordleChannelHistory = wordleChannelHistory.concat(results.messages);
     cursor = results.response_metadata.next_cursor;
   }
+
+  wordleChannelHistory.forEach((historyItem) => {
+    if (historyItem.text)
+      historyItem.text = replaceEmojiAndComma(historyItem.text);
+  });
 
   /**
    * REPLAY LOGIC
