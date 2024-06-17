@@ -152,15 +152,15 @@ const handleWordlePosted = async ({
       ? await app.client.chat.postMessage({
           token: context.botToken,
           channel: payload.channel,
-          username: "Word",
-          icon_emoji: ":word:",
+          username: "Wordle",
+          icon_emoji: ":wordle-icon:",
           text: finalScoreboard,
         })
       : await app.client.chat.postMessage({
           token: context.botToken,
           channel: payload.channel,
-          username: "Word",
-          icon_emoji: ":word:",
+          username: "Wordle",
+          icon_emoji: ":wordle-icon:",
           text: "No valid Wordles to replay.",
         });
 
@@ -222,8 +222,8 @@ const handleWordlePosted = async ({
         token: context.botToken,
         channel: payload.channel,
         text: scoreBoardText,
-        username: "Word",
-        icon_emoji: ":word:",
+        username: "Wordle",
+        icon_emoji: ":wordle-icon:",
       });
 
       if (existingScoreBoard)
@@ -236,7 +236,7 @@ const handleWordlePosted = async ({
       await app.client.reactions.add({
         token: context.botToken,
         channel: payload.channel,
-        name: "word",
+        name: "Wordle",
         timestamp: payload.ts,
       });
     }
@@ -437,8 +437,8 @@ ${Object.entries(userScoreTotals)
       token: context.botToken,
       channel: payload.channel,
       text: scoreboardFinalText,
-      username: "Word",
-      icon_emoji: ":word:",
+      username: "Wordle",
+      icon_emoji: ":wordle-icon:",
     });
   };
 
