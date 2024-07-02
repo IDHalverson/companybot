@@ -236,7 +236,7 @@ const handleWordlePosted = async ({
       await app.client.reactions.add({
         token: context.botToken,
         channel: payload.channel,
-        name: "Wordle",
+        name: "wordle-icon",
         timestamp: payload.ts,
       });
     }
