@@ -5,7 +5,7 @@ const {
 } = require("./buslogic");
 const axios = require("axios");
 
-// app.message(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/, jiraUnfurlCallback);
+app.message(/((?<!([A-Z]{1,10})-?)[A-Z0-9]+-\d+)/, jiraUnfurlCallback);
 
 // const unavailable = async ({ context, command, ack }) => {
 //   ack();
@@ -19,6 +19,6 @@ const axios = require("axios");
 //   axios.post(command.response_url, postParams);
 // }
 
-// app.command("/jira", jiraUnfurlCallback);
+app.command("/j", jiraUnfurlCallback);
 
-// app.command("/jira-details", jiraUnfurlDetailedCallback);
+app.command("/jj", jiraUnfurlDetailedCallback);

@@ -19,15 +19,11 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
       await (jiraIdentifierMatches || []).forEach(async (jiraIdentifier) => {
         const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
         const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
-        const credentials = process.env.JIRA_CREDS;
-        const [username, password] = new Buffer.from(credentials, "base64")
-          .toString("utf-8")
-          .split(":");
         const jiraCall = await axios.get(jiraApiUrl, {
           auth: {
-            username,
-            password
-          }
+            username: process.env.JIRA_EMAIL,
+            password: process.env.JIRA_API_TOKEN,
+          },
         });
         if (jiraCall && jiraCall.status === 200) {
           const jiraJson = jiraCall.data;
@@ -48,15 +44,17 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
               jiraBrowseUrl,
               jiraIdentifier,
               comment
-            )
+            ),
           };
           const key = `${jiraIdentifier}${comment ? "_comment" : ""}`;
-          const wasActualJiraFound = Boolean(get(jiraJson, "fields.project.name"));
+          const wasActualJiraFound = Boolean(
+            get(jiraJson, "fields.project.name")
+          );
           if (wasActualJiraFound && !alreadySentMap[key]) {
             if (command && command.text) {
               postParams = {
                 ...postParams,
-                response_type: "in_channel"
+                response_type: "in_channel",
               };
               axios.post(command.response_url, postParams);
             } else {
@@ -64,7 +62,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
                 ...postParams,
                 channel: payload.channel,
                 reply_broadcast: false,
-                thread_ts: payload.thread_ts
+                thread_ts: payload.thread_ts,
               };
               app.client.chat.postMessage(postParams);
             }
@@ -82,7 +80,7 @@ const jiraUnfurlDetailedCallback = async ({
   command,
   payload,
   context,
-  ack
+  ack,
 }) => {
   try {
     ack && (await ack());
@@ -92,20 +90,17 @@ const jiraUnfurlDetailedCallback = async ({
     await (jiraIdentifiers || []).forEach(async (jiraIdentifier) => {
       const jiraApiUrl = `${process.env.JIRA_API_URL_PREFIX}${jiraIdentifier}?expand=space`;
       const jiraBrowseUrl = `${process.env.JIRA_BROWSE_URL_PREFIX}${jiraIdentifier}`;
-      const credentials = process.env.JIRA_CREDS;
-      const [username, password] = new Buffer.from(credentials, "base64")
-        .toString("utf-8")
-        .split(":");
       const jiraCall = await axios.get(jiraApiUrl, {
         auth: {
-          username,
-          password
-        }
+          username: process.env.JIRA_EMAIL,
+          password: process.env.JIRA_API_TOKEN,
+        },
       });
       if (jiraCall && jiraCall.status === 200) {
         const jiraJson = jiraCall.data;
         console.log(
-          `JIRA unfurl: ${jiraIdentifier} in channel ${command.channel_id || payload.channel
+          `JIRA unfurl: ${jiraIdentifier} in channel ${
+            command.channel_id || payload.channel
           }`
         );
         let postParams = {
@@ -116,12 +111,12 @@ const jiraUnfurlDetailedCallback = async ({
             jiraJson,
             jiraBrowseUrl,
             jiraIdentifier
-          )
+          ),
         };
         if (command && command.text) {
           postParams = {
             ...postParams,
-            response_type: "in_channel"
+            response_type: "in_channel",
           };
           axios.post(command.response_url, postParams);
         } else {
@@ -129,7 +124,7 @@ const jiraUnfurlDetailedCallback = async ({
             ...postParams,
             channel: payload.channel,
             reply_broadcast: false,
-            thread_ts: payload.thread_ts
+            thread_ts: payload.thread_ts,
           };
           app.client.chat.postMessage(postParams);
         }
@@ -142,5 +137,5 @@ const jiraUnfurlDetailedCallback = async ({
 
 module.exports = {
   jiraUnfurlCallback,
-  jiraUnfurlDetailedCallback
+  jiraUnfurlDetailedCallback,
 };
