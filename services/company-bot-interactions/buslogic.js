@@ -3,6 +3,7 @@ const { app } = require("../../index");
 const { companyBlue } = require("../../colors");
 
 const companyBotPostInChannel = async ({ payload, context }) => {
+  console.log("companyBotPostInChannel", payload, context);
   try {
     if (
       payload &&
@@ -13,15 +14,9 @@ const companyBotPostInChannel = async ({ payload, context }) => {
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: get(context, "matches[1]"),
-        text: payload.text
-          .replace(
-            new RegExp(`${process.env.COMPANYNAME_LOWERCASE_NOSPACES
-              }bot\\spost\\sin\\s\\<\\#([A-Za-z0-9]+)\\|[a-z\\-\\_]+\\>\\s`),
-            ""
-          )
-          .replace(/\n\*([\s]+)\*/g, "\n$1"),
+        text: get(context, "matches[2]"),
         // keep @here, @channel, etc.
-        parse: "full"
+        parse: "full",
       });
     }
   } catch (e) {
@@ -41,7 +36,7 @@ const companyBotMessageAllUsers = async ({ payload, context }) => {
       const users =
         (await app.client.users.list({
           token: context.botToken,
-          limit: 5000
+          limit: 5000,
         })) || {};
 
       const userIds = (users.members || [])
@@ -55,25 +50,25 @@ const companyBotMessageAllUsers = async ({ payload, context }) => {
           text: undefined,
           attachments: [],
           // keep @here, @channel, etc.
-          parse: "full"
+          parse: "full",
         });
       });
-
-
     }
   } catch (e) {
     console.error(e.stack);
   }
 };
 
-const addEmoji = (emojiName) => async ({ payload, context }) => {
+const addEmoji =
+  (emojiName) =>
+  async ({ payload, context }) => {
     app.client.reactions.add({
       token: context.botToken,
       channel: payload.channel,
       name: emojiName,
       timestamp: payload.ts,
     });
-}
+  };
 
 module.exports = {
   companyBotPostInChannel,
