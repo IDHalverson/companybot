@@ -3,6 +3,9 @@
   "version": "1.1.0",
   "description": "Slack API for custom interactions @ Your Company",
   "main": "index.js",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Note: no tests available\" && exit 0"
