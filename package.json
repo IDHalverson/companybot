@@ -1,6 +1,6 @@
 {
   "name": "company-bot",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Slack API for custom interactions @ Your Company",
   "main": "index.js",
   "scripts": {
@@ -10,19 +10,18 @@
   "keywords": [
     "slack"
   ],
-  "author": "idhalverson@gmail.com",
   "license": "ISC",
   "dependencies": {
-    "@slack/bolt": "^2.7.0",
-    "@slack/events-api": "^2.3.4",
-    "@slack/web-api": "^5.15.0",
-    "axios": "^0.19.2",
-    "dotenv": "^8.2.0",
-    "lodash": "^4.17.15",
-    "moment": "^2.29.1",
-    "nodemailer": "^6.4.6"
+    "@slack/bolt": "^3.19.0",
+    "@slack/events-api": "^3.0.1",
+    "@slack/web-api": "^7.0.0",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.23",
+    "moment": "^2.30.1",
+    "nodemailer": "^7.0.11"
   },
   "devDependencies": {
-    "nodemon": "^2.0.3"
+    "nodemon": "^3.1.0"
   }
 }
