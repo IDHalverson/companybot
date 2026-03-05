@@ -7,19 +7,20 @@ pipelines:
     - step:
         caches:
           - node
-        script: 
+        script:
           # This gets executed on every push by a developer
           - npm install
           - npm test
-  branches:
-    master:
-      - step:
-          caches:
-            - node
-          script:
-            # This gets executed when merging a PR to master branch
-            - npm install
-            - npm test
-            - git config --global user.email "econnatser@burrislogistics.com"
-            - git config --global user.name "Eddie Connatser"
-            - git push -f https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_PRODUCTION_APP_NAME.git master
+  # Put this back if we fix authentication and want Bitbucket to deploy automatically to Heroku
+  # branches:
+  #   master:
+  #     - step:
+  #         caches:
+  #           - node
+  #         script:
+  #           # This gets executed when merging a PR to master branch
+  #           - npm install
+  #           - npm test
+  #           - git config --global user.email "econnatser@burrislogistics.com"
+  #           - git config --global user.name "Eddie Connatser"
+  #           - git push -f https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_PRODUCTION_APP_NAME.git master
