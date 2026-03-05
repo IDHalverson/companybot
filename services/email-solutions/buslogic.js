@@ -10,13 +10,13 @@ const transporter = nodemailer.createTransport({
   secure: Boolean(process.env.EMAIL_SECURE), // use SSL
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 const defaultMailOptions = {
   from: `"${process.env.EMAIL_DISPLAY_NAME}" ${process.env.EMAIL_USER}`,
   to: process.env.SOLUTIONS_EMAIL,
-  subject: "[Slack] "
+  subject: "[Slack] ",
 };
 
 /* ASYNC METHODS */
@@ -24,7 +24,7 @@ const defaultMailOptions = {
 const messageRawTextMatchCallback = async ({ context, body, payload }) => {
   const channelInfo = await app.client.conversations.info({
     token: context.botToken,
-    channel: body.event.channel
+    channel: body.event.channel,
   });
   const channel_id = channelInfo.channel.id;
   const user_id = payload.user;
@@ -33,7 +33,7 @@ const messageRawTextMatchCallback = async ({ context, body, payload }) => {
     token: context.botToken,
     channel: channel_id,
     user: user_id,
-    text: TEMPLATES.getEphemeralEmailSolutionsTip(text)
+    text: TEMPLATES.getEphemeralEmailSolutionsTip(text),
   });
 };
 
@@ -42,7 +42,7 @@ const slashSolutionsCommandCallback = async ({
   command,
   ack,
   body,
-  payload
+  payload,
 }) => {
   await ack();
   await mailSolutionsWorkflow({ context, command, body, payload });
@@ -53,13 +53,13 @@ const emailSolutionsMessageShortcutCallback = async ({
   body,
   ack,
   say,
-  payload
+  payload,
 }) => {
   await ack();
   const synthesizedCommand = {
     text: payload.message.text,
     channel_name: payload.channel.name,
-    channel_id: payload.channel.id
+    channel_id: payload.channel.id,
   };
   await mailSolutionsWorkflow({
     context,
@@ -67,7 +67,7 @@ const emailSolutionsMessageShortcutCallback = async ({
     body,
     ack,
     say,
-    payload
+    payload,
   });
 };
 
@@ -76,13 +76,13 @@ const emailSolutionsGlobalShortcutCallback = async ({
   body,
   ack,
   say,
-  payload
+  payload,
 }) => {
   await ack();
   const synthesizedCommand = {
-    text: "",
+    text: " ",
     channel_name: "",
-    channel_id: ""
+    channel_id: "",
   };
   await mailSolutionsWorkflow({
     context,
@@ -90,14 +90,14 @@ const emailSolutionsGlobalShortcutCallback = async ({
     body,
     ack,
     say,
-    payload
+    payload,
   });
 };
 
 const emailSolutionsFormSubmissionCallback = async ({
   ack,
   payload,
-  context
+  context,
 }) => {
   try {
     const [
@@ -105,7 +105,7 @@ const emailSolutionsFormSubmissionCallback = async ({
       channel_name = "",
       user_email = "",
       user_id = "",
-      channel_id = ""
+      channel_id = "",
     ] = payload.private_metadata.split("<sep?>");
 
     let enteredSubject = get(
@@ -118,25 +118,22 @@ const emailSolutionsFormSubmissionCallback = async ({
       "state.values.urgency.urgency_value.selected_option.value"
     );
 
-    const {
-      bodyHtml,
-      bodyText,
-      subject
-    } = TEMPLATES.getEmailTextAndHtmlContent(
-      channel_name,
-      user_email,
-      user_real_name,
-      urgency,
-      body,
-      enteredSubject
-    );
+    const { bodyHtml, bodyText, subject } =
+      TEMPLATES.getEmailTextAndHtmlContent(
+        channel_name,
+        user_email,
+        user_real_name,
+        urgency,
+        body,
+        enteredSubject
+      );
 
     const mailOptions = {
       ...defaultMailOptions,
       replyTo: user_email,
       subject: subject,
       text: bodyText,
-      html: bodyHtml
+      html: bodyHtml,
     };
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) throw err; //will be caught at top level
@@ -159,7 +156,7 @@ module.exports = {
   slashSolutionsCommandCallback,
   emailSolutionsMessageShortcutCallback,
   emailSolutionsGlobalShortcutCallback,
-  emailSolutionsFormSubmissionCallback
+  emailSolutionsFormSubmissionCallback,
 };
 
 /* UTILS */
@@ -172,7 +169,7 @@ const mailSolutionsWorkflow = async ({ context, command, body, payload }) => {
     const initialSubject =
       defaultMailOptions.subject +
       `${(textInline || "").substring(0, 60)}${
-      (textInline || "").length > 59 ? "..." : ""
+        (textInline || "").length > 59 ? "..." : ""
       }`;
     const initialBody = command.text;
 
@@ -184,14 +181,14 @@ const mailSolutionsWorkflow = async ({ context, command, body, payload }) => {
         context,
         initialSubject,
         initialBody
-      )
+      ),
     });
   } catch (e) {
     console.error(e.stack);
     axios.post((body || {}).response_url || (payload || {}).response_url, {
       response_type: "ephemeral",
       replace_original: false,
-      text: TEMPLATES.getEphemeralCouldNotPrepareEmailText(e)
+      text: TEMPLATES.getEphemeralCouldNotPrepareEmailText(e),
     });
   }
 };

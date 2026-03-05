@@ -37,6 +37,7 @@ const jiraUnfurlCallback = async ({ command, payload, context, ack }) => {
           }
           let postParams = {
             token: context.botToken,
+            text: " ",
             icon_emoji: ":jira:",
             username: "JIRA",
             attachments: TEMPLATES.jiraUnfurlAttachments(

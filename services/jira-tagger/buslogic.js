@@ -44,7 +44,7 @@ const resolveParams = (
   let params = {
     token: context.botToken,
     channel: payload.channel,
-    text: "",
+    text: " ",
     icon_emoji: ":jira:",
     username: "JIRA Tagger",
     thread_ts: payload.ts,
@@ -52,8 +52,8 @@ const resolveParams = (
       ...att,
       text: !att.text
         ? att.text
-        : att.text.replace(jiraRegexp, `<@${slackMemberId}>`)
-    }))
+        : att.text.replace(jiraRegexp, `<@${slackMemberId}>`),
+    })),
   };
   if (deliveryMethod === "message_thread") {
     // do nothing
@@ -64,7 +64,7 @@ const resolveParams = (
       token: params.token,
       channel: slackMemberId,
       text: params.text,
-      attachments: params.attachments
+      attachments: params.attachments,
     };
   }
   return params;
@@ -74,15 +74,12 @@ const resolveJiraNotifyMappings = () => {
   const jiraNotifyMappingsENV = process.env.JIRA_NOTIFY_MAPPINGS || "";
   const jiraNotifyMappings = jiraNotifyMappingsENV.split(",");
   const mappingEntries = jiraNotifyMappings.map((jNM) => {
-    const [
-      jiraUsername,
-      slackMemberId,
-      deliveryMethod = "message_thread"
-    ] = jNM.split(":");
+    const [jiraUsername, slackMemberId, deliveryMethod = "message_thread"] =
+      jNM.split(":");
     return {
       jiraUsername,
       slackMemberId,
-      deliveryMethod
+      deliveryMethod,
     };
   });
   return mappingEntries;
